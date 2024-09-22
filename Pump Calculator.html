@@ -1,0 +1,382 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Pump Power Calculator</title>
+    <style>
+        /* Reset and base styles */
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: #f4f7f9;
+            color: #333;
+            padding: 20px;
+            overflow-y: auto; /* Scroll bar for the entire body */
+        }
+
+        h1, h2, h3, h4 {
+            color: #2c3e50;
+            margin-bottom: 10px;
+        }
+
+        h1 {
+            text-align: center;
+            margin-bottom: 40px;
+        }
+
+        /* Form container with two-column layout */
+        .form-container {
+            display: flex;
+            flex-wrap: wrap;
+            background-color: #fff;
+            padding: 30px 40px;
+            border-radius: 10px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+            max-width: 950px;
+            margin: 0 auto;
+            overflow-y: auto; /* Enable scroll if form content overflows */
+        }
+
+        /* Left (Project Information) */
+        .left-section {
+            flex: 1;
+            padding-right: 20px;
+        }
+
+        /* Right (Calculator Inputs) */
+        .right-section {
+            flex: 1;
+            padding-left: 20px;
+        }
+
+        .form-group {
+            display: flex;
+            flex-direction: column;
+            margin-bottom: 20px;
+        }
+
+        label {
+            margin-bottom: 8px;
+            font-weight: bold;
+        }
+
+        input[type="number"], input[type="text"] {
+            padding: 12px;
+            border: 1px solid #ccd0d5;
+            border-radius: 6px;
+            font-size: 16px;
+            width: 100%;
+        }
+
+        /* Make the textboxes in the right-section smaller */
+        .right-section input[type="number"] {
+            width: 50%; /* Reduce the width to half */
+        }
+
+        input[type="submit"] {
+            padding: 14px 24px;
+            background-color: #2980b9;
+            color: #fff;
+            border: none;
+            border-radius: 6px;
+            font-size: 18px;
+            cursor: pointer;
+            transition: background-color 0.3s ease;
+            width: 100%;
+            margin-top: 15px;
+        }
+
+        input[type="submit"]:hover {
+            background-color: #1f6391;
+        }
+
+        /* Report styles */
+        .report {
+            max-width: 900px;
+            margin: 60px auto 0;
+            background-color: #fff;
+            padding: 35px 45px;
+            border-radius: 10px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+        }
+
+        .summary-table, .details-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-bottom: 30px;
+        }
+
+        .summary-table th, .summary-table td,
+        .details-table th, .details-table td {
+            border: 1px solid #ddd;
+            padding: 14px;
+            text-align: left;
+        }
+
+        .summary-table th, .details-table th {
+            background-color: #f1f1f1;
+            font-weight: bold;
+        }
+
+        .summary-table th {
+            width: 40%;
+        }
+
+        .details-section {
+            margin-bottom: 40px;
+        }
+
+        .details-section p {
+            margin-bottom: 15px;
+            line-height: 1.7;
+        }
+
+        .details-section ul {
+            list-style-type: disc;
+            margin-left: 25px;
+            margin-bottom: 15px;
+        }
+
+        .highlight {
+            color: #e74c3c;
+            font-weight: bold;
+        }
+
+        /* Improved spacing for educational purposes */
+        .section-description {
+            margin-bottom: 20px;
+            font-style: italic;
+            color: #555;
+        }
+
+        .details-section h4 {
+            margin-top: 25px;
+            margin-bottom: 12px;
+        }
+
+        .formula {
+            text-align: center;
+            margin: 20px 0;
+            font-size: 18px;
+            background-color: #f9f9f9;
+            padding: 10px;
+            border-left: 4px solid #2980b9;
+            border-radius: 4px;
+            display: inline-block;
+            width: 100%;
+        }
+
+        .calculation {
+            text-align: center;
+            margin-top: 10px;
+            font-size: 16px;
+            color: #555;
+        }
+
+        /* Responsive Design */
+        @media (max-width: 768px) {
+            .form-container {
+                flex-direction: column;
+            }
+
+            .form-container, .report {
+                padding: 25px 30px;
+            }
+
+            input[type="number"], input[type="submit"] {
+                font-size: 16px;
+            }
+
+            .summary-table th, .summary-table td,
+            .details-table th, .details-table td {
+                padding: 12px;
+            }
+
+            .formula {
+                font-size: 16px;
+            }
+        }
+    </style>
+</head>
+<body>
+
+    <h1>Pump Power Calculator</h1>
+    
+    <!-- Start of the form -->
+    <form id="pumpForm">
+        <div class="form-container">
+            <!-- Left section for project information -->
+            <div class="left-section">
+                <p>Project Information:</p>
+                <div class="form-group">
+                    <label for="projectName">Project Name:</label>
+                    <input type="text" id="projectName" name="projectName" required>
+                </div>
+                <div class="form-group">
+                    <label for="systemName">System Name:</label>
+                    <input type="text" id="systemName" name="systemName" required>
+                </div>
+                <div class="form-group">
+                    <label for="designerName">Designer Name:</label>
+                    <input type="text" id="designerName" name="designerName" required>
+                </div>
+                <div class="form-group">
+                    <label for="revision">Revision:</label>
+                    <input type="text" id="revision" name="revision" required>
+                </div>
+            </div>
+
+            <!-- Right section for calculator inputs -->
+            <div class="right-section">
+                <p>Calculator Inputs:</p>
+                <div class="form-group">
+                    <label for="flowRate">Flow Rate / Capacity (Q) [gpm]:</label>
+                    <input type="number" id="flowRate" name="flowRate" step="any" required>
+                </div>
+                <div class="form-group">
+                    <label for="head">Total Head Pressure (H) [m]:</label>
+                    <input type="number" id="head" name="head" step="any" required>
+                </div>
+                <div class="form-group">
+                    <label for="density">Fluid Density (ρ) [kg/m³]:</label>
+                    <input type="number" id="density" name="density" step="any" value="870" required>
+                </div>
+                <div class="form-group">
+                    <label for="gravity">Acceleration due to Gravity (g) [m/s²]:</label>
+                    <input type="number" id="gravity" name="gravity" step="any" value="9.81" required>
+                </div>
+                <div class="form-group">
+                    <label for="efficiency">Pump Efficiency (η) [%]:</label>
+                    <input type="number" id="efficiency" name="efficiency" step="any" value="85" required>
+                </div>
+            </div>
+        </div>
+
+        <div style="max-width: 950px; margin: 0 auto;">
+            <input type="submit" value="Calculate Pump Power">
+        </div>
+    </form>
+    <!-- End of the form -->
+
+    <script>
+        document.getElementById('pumpForm').addEventListener('submit', function(e) {
+            e.preventDefault();
+
+            // Retrieve input values
+            const projectName = document.getElementById('projectName').value;
+            const systemName = document.getElementById('systemName').value;
+            const designerName = document.getElementById('designerName').value;
+            const revision = document.getElementById('revision').value;
+            const Q_gpm = parseFloat(document.getElementById('flowRate').value);
+            const H = parseFloat(document.getElementById('head').value);
+            const rho = parseFloat(document.getElementById('density').value);
+            const g = parseFloat(document.getElementById('gravity').value);
+            const eta_percent = parseFloat(document.getElementById('efficiency').value);
+            const eta = eta_percent / 100; // Convert percentage to decimal
+
+            // Validate inputs
+            if (Q_gpm <= 0 || H <= 0 || rho <= 0 || g <= 0 || eta <= 0) {
+                alert("Please enter positive values for all parameters.");
+                return;
+            }
+
+            // Calculations
+            // 1. Convert Q from gpm to m³/s
+            const Q_m3s = Q_gpm * 0.00378541 / 60;
+
+            // 2. Hydraulic Power (W) = rho * g * Q * H
+            const Ph_watts = rho * g * Q_m3s * H;
+
+            // 3. Shaft Power (W) = Ph / eta
+            const Ps_watts = Ph_watts / eta;
+
+            // 4. Convert to kW
+            const Ph_kw = Ph_watts / 1000;
+            const Ps_kw = Ps_watts / 1000;
+
+            // 5. Convert Shaft Power to HP
+            const Hp = Ps_kw * 1.34102;
+
+            // 6. Calculate Electric Motor Power (add 15% margin)
+            const motorPower_kw = Ps_kw * 1.15;
+
+            // Round values to two decimal places
+            const Ph_kw_rounded = Ph_kw.toFixed(2);
+            const Ps_kw_rounded = Ps_kw.toFixed(2);
+            const Hp_rounded = Hp.toFixed(2);
+            const motorPower_rounded = motorPower_kw.toFixed(2);
+            const Q_m3s_rounded = Q_m3s.toFixed(5);
+
+            // Create a new window and generate the report content
+            const reportWindow = window.open("", "_blank");
+            const reportContent = `
+                <html>
+                    <head>
+                        <title>Determination of Pump Power Requirements</title>
+                        <style>
+                            body { font-family: 'Segoe UI', sans-serif; padding: 20px; }
+                            h2 { color: #2c3e50; }
+                            table { width: 100%; border-collapse: collapse; margin-bottom: 30px; }
+                            th, td { border: 1px solid #ddd; padding: 10px; text-align: left; }
+                            th { background-color: #f1f1f1; font-weight: bold; }
+                            .formula { text-align: center; background-color: #f9f9f9; padding: 10px; margin: 20px 0; border-left: 4px solid #2980b9; }
+                            .calculation { text-align: center; margin-top: 10px; font-size: 16px; color: #555; }
+                        </style>
+                    </head>
+                    <body>
+                        <h2>Determination of Pump Power Requirements</h2>
+                        <p><strong>Project:</strong> ${projectName}</p>
+                        <p><strong>System:</strong> ${systemName}</p>
+                        <p><strong>Date:</strong> ${new Date().toLocaleDateString()}</p>
+                        <p><strong>Designer:</strong> ${designerName}</p>
+                        <p><strong>Revision:</strong> ${revision}</p>
+                        
+                        <h2>Summary of Results</h2>
+                        <table>
+                            <tr><th>Parameter</th><th>Value</th><th>Units</th></tr>
+                            <tr><td>Flow Rate (Q)</td><td>${Q_gpm}</td><td>gpm</td></tr>
+                            <tr><td>Total Head Pressure (H)</td><td>${H}</td><td>m</td></tr>
+                            <tr><td>Fluid Density (ρ)</td><td>${rho}</td><td>kg/m³</td></tr>
+                            <tr><td>Acceleration due to Gravity (g)</td><td>${g}</td><td>m/s²</td></tr>
+                            <tr><td>Pump Efficiency (η)</td><td>${eta_percent}</td><td>%</td></tr>
+                            <tr><td>Hydraulic Power (Pₕ)</td><td>${Ph_kw_rounded}</td><td>kW</td></tr>
+                            <tr><td>Shaft Power (Pₛₕₐₓ)</td><td>${Ps_kw_rounded}</td><td>kW</td></tr>
+                            <tr><td>Power Output (HP)</td><td>${Hp_rounded}</td><td>HP</td></tr>
+                            <tr><td>Electric Motor Power</td><td>${motorPower_rounded}</td><td>kW</td></tr>
+                        </table>
+
+                        <h2>Formulas and Calculations</h2>
+                        <h4>Flow Rate Conversion (Q)</h4>
+                        <p class="section-description">The flow rate is converted from gpm to m³/s to maintain consistent units for calculations.</p>
+                        <p class="formula">Q (m³/s) = Q (gpm) × 0.00378541 / 60</p>
+                        <p class="calculation">Calculated Flow Rate (Q) = ${Q_m3s_rounded} m³/s</p>
+
+                        <h4>Hydraulic Power (Pₕ)</h4>
+                        <p class="section-description">Hydraulic power represents the ideal power needed to move the fluid through the system.</p>
+                        <p class="formula">Pₕ = ρ × g × Q × H</p>
+                        <p class="calculation">Calculated Hydraulic Power (Pₕ) = ${Ph_watts.toFixed(2)} W</p>
+
+                        <h4>Shaft Power (Pₛₕₐₓ)</h4>
+                        <p class="section-description">Shaft power accounts for pump efficiency and indicates the actual power required by the motor.</p>
+                        <p class="formula">Pₛₕₐₓ = Pₕ / η</p>
+                        <p class="calculation">Calculated Shaft Power (Pₛₕₐₓ) = ${Ps_watts.toFixed(2)} W</p>
+
+                        <h4>Power Output (HP)</h4>
+                        <p class="section-description">The final result, Power Output, is expressed in horsepower, commonly used for motors.</p>
+                        <p class="formula">HP = Pₛₕₐₓ × 0.00134102</p>
+                        <p class="calculation">Calculated Power Output (HP) = ${Hp_rounded} HP</p>
+                    </body>
+                </html>
+            `;
+            reportWindow.document.write(reportContent);
+            reportWindow.document.close(); // Ensures content is rendered
+        });
+    </script>
+
+</body>
+</html>
