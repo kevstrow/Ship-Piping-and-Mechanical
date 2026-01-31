@@ -1,384 +1,597 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <title>Pump Power Calculator</title>
-    <style>
-        /* Reset and base styles */
-        * {
-            box-sizing: border-box;
-            margin: 0;
-            padding: 0;
-        }
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Piping & Equipment Library</title>
+  <style>
+    :root{
+      --bg:#ffffff;
+      --text:#111827;
+      --muted:#6b7280;
+      --border:#e5e7eb;
+      --card:#ffffff;
+      --shadow:0 1px 8px rgba(0,0,0,0.06);
+      --radius:14px;
+      --pad:18px;
+      --max:1100px;
+      --tab:#f3f4f6;
+      --tabActive:#111827;
+      --tabActiveText:#ffffff;
+      --focus: 0 0 0 3px rgba(59,130,246,0.35);
+      --font: system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, "Apple Color Emoji","Segoe UI Emoji";
+      --nav-bg: #f9fafb;
+      --nav-hover: rgba(0,0,0,0.05);
+    }
 
-        body {
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            background-color: #f4f7f9;
-            color: #333;
-            padding: 20px;
-            overflow-y: auto; /* Scroll bar for the entire body */
-        }
+    *{ box-sizing:border-box; }
+    body{
+      margin:0;
+      font-family:var(--font);
+      background:var(--bg);
+      color:var(--text);
+      line-height:1.35;
+    }
 
-        h1, h2, h3, h4 {
-            color: #2c3e50;
-            margin-bottom: 10px;
-        }
+    .wrap{
+      max-width:var(--max);
+      margin:0 auto;
+      padding:28px 18px 40px;
+    }
 
-        h1 {
-            text-align: center;
-            margin-bottom: 40px;
-        }
+    header{
+      display:flex;
+      flex-direction:column;
+      gap:10px;
+      margin-bottom:18px;
+    }
 
-        /* Form container with two-column layout */
-        .form-container {
-            display: flex;
-            flex-wrap: wrap;
-            background-color: #fff;
-            padding: 30px 40px;
-            border-radius: 10px;
-            box-shadow: 0 4px 12px rgba(0,0,0,0.1);
-            max-width: 950px;
-            margin: 0 auto;
-            overflow-y: auto; /* Enable scroll if form content overflows */
-        }
+    h1{
+      font-size:26px;
+      margin:0;
+      letter-spacing:-0.2px;
+    }
 
-        /* Left (Project Information) */
-        .left-section {
-            flex: 1;
-            padding-right: 20px;
-        }
+    .sub{
+      color:var(--muted);
+      margin:0;
+      font-size:14px;
+    }
 
-        /* Right (Calculator Inputs) */
-        .right-section {
-            flex: 1;
-            padding-left: 20px;
-        }
+    /* Modern Navigation Bar */
+    .toolbar{
+      background: var(--nav-bg);
+      border-radius: 16px;
+      padding: 0;
+      margin: 16px 0 24px;
+      border: 1px solid var(--border);
+      box-shadow: var(--shadow);
+      overflow: hidden;
+    }
 
-        .form-group {
-            display: flex;
-            flex-direction: column;
-            margin-bottom: 20px;
-        }
+    .tabs{
+      display: flex;
+      gap: 0;
+      flex-wrap: wrap;
+      margin: 0;
+      padding: 8px;
+    }
 
-        label {
-            margin-bottom: 8px;
-            font-weight: bold;
-        }
+    .tab-btn{
+      flex: 1;
+      min-width: 120px;
+      border: none;
+      background: transparent;
+      color: var(--text);
+      padding: 10.5px 20px;
+      border-radius: 10px;
+      font-size: 14px;
+      font-weight: 500;
+      cursor: pointer;
+      user-select: none;
+      transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+      position: relative;
+    }
 
-        input[type="number"], input[type="text"] {
-            padding: 12px;
-            border: 1px solid #ccd0d5;
-            border-radius: 6px;
-            font-size: 16px;
-            width: 100%;
-        }
+    .tab-btn:hover{
+      background: var(--nav-hover);
+      transform: translateY(-1px);
+    }
 
-        /* Make the textboxes in the right-section smaller */
-        .right-section input[type="number"] {
-            width: 50%; /* Reduce the width to half */
-        }
+    .tab-btn:focus{
+      outline: none;
+      box-shadow: 0 0 0 3px rgba(255,255,255,0.3);
+    }
 
-        input[type="submit"] {
-            padding: 14px 24px;
-            background-color: #2980b9;
-            color: #fff;
-            border: none;
-            border-radius: 6px;
-            font-size: 18px;
-            cursor: pointer;
-            transition: background-color 0.3s ease;
-            width: 100%;
-            margin-top: 15px;
-        }
+    .tab-btn[aria-selected="true"]{
+      background: var(--tabActive);
+      color: var(--tabActiveText);
+      font-weight: 600;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+    }
 
-        input[type="submit"]:hover {
-            background-color: #1f6391;
-        }
+    .tab-btn[aria-selected="true"]:hover{
+      transform: none;
+    }
 
-        /* Report styles */
-        .report {
-            max-width: 900px;
-            margin: 60px auto 0;
-            background-color: #fff;
-            padding: 35px 45px;
-            border-radius: 10px;
-            box-shadow: 0 4px 12px rgba(0,0,0,0.1);
-        }
+    @media (max-width: 768px){
+      .tab-btn{
+        flex: 1 1 calc(50% - 4px);
+        min-width: 0;
+        padding: 9px 16px;
+        font-size: 13px;
+      }
+    }
 
-        .summary-table, .details-table {
-            width: 100%;
-            border-collapse: collapse;
-            margin-bottom: 30px;
-        }
+    @media (max-width: 480px){
+      .tab-btn{
+        flex: 1 1 100%;
+      }
+    }
 
-        .summary-table th, .summary-table td,
-        .details-table th, .details-table td {
-            border: 1px solid #ddd;
-            padding: 14px;
-            text-align: left;
-        }
+    /* Panels */
+    .panel{
+      display:none;
+      border:1px solid var(--border);
+      border-radius:var(--radius);
+      padding:var(--pad);
+      background:var(--card);
+      box-shadow:var(--shadow);
+    }
 
-        .summary-table th, .details-table th {
-            background-color: #f1f1f1;
-            font-weight: bold;
-        }
+    .panel[data-active="true"]{
+      display:block;
+    }
 
-        .summary-table th {
-            width: 40%;
-        }
+    .panel h2{
+      margin:0 0 10px;
+      font-size:18px;
+    }
 
-        .details-section {
-            margin-bottom: 40px;
-        }
+    .panel p{
+      margin:0 0 16px;
+      color:var(--muted);
+      font-size:14px;
+    }
 
-        .details-section p {
-            margin-bottom: 15px;
-            line-height: 1.7;
-        }
+    /* Cards grid */
+    .grid{
+      display:grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap:12px;
+    }
 
-        .details-section ul {
-            list-style-type: disc;
-            margin-left: 25px;
-            margin-bottom: 15px;
-        }
+    @media (max-width: 980px){
+      .grid{ grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    }
+    @media (max-width: 620px){
+      .grid{ grid-template-columns: 1fr; }
+    }
 
-        .highlight {
-            color: #e74c3c;
-            font-weight: bold;
-        }
+    .card{
+      border:1px solid var(--border);
+      border-radius:var(--radius);
+      padding:14px;
+      background:var(--card);
+      box-shadow:var(--shadow);
+      display:flex;
+      flex-direction:column;
+      gap:10px;
+      min-height:132px;
+    }
 
-        /* Improved spacing for educational purposes */
-        .section-description {
-            margin-bottom: 20px;
-            font-style: italic;
-            color: #555;
-        }
+    .card .title{
+      font-weight:650;
+      font-size:14px;
+      margin:0;
+    }
 
-        .details-section h4 {
-            margin-top: 25px;
-            margin-bottom: 12px;
-        }
+    .card .desc{
+      margin:0;
+      color:var(--muted);
+      font-size:13px;
+      display:-webkit-box;
+      -webkit-line-clamp: 3;
+      -webkit-box-orient: vertical;
+      overflow:hidden;
+      min-height: 3.9em;
+    }
 
-        .formula {
-            text-align: center;
-            margin: 20px 0;
-            font-size: 18px;
-            background-color: #f9f9f9;
-            padding: 10px;
-            border-left: 4px solid #2980b9;
-            border-radius: 4px;
-            display: inline-block;
-            width: 100%;
-        }
+    .card .actions{
+      margin-top:auto;
+      display:flex;
+      gap:10px;
+      flex-wrap:wrap;
+    }
 
-        .calculation {
-            text-align: center;
-            margin-top: 10px;
-            font-size: 16px;
-            color: #555;
-        }
+    .btn{
+      display:inline-block;
+      text-decoration:none;
+      border:1px solid var(--border);
+      padding:8px 10px;
+      border-radius:12px;
+      font-size:13px;
+      color:var(--text);
+      background:#f9fafb;
+    }
 
-        /* Responsive Design */
-        @media (max-width: 768px) {
-            .form-container {
-                flex-direction: column;
-            }
+    .btn:hover{
+      background:#f3f4f6;
+    }
 
-            .form-container, .report {
-                padding: 25px 30px;
-            }
+    .btn:focus{
+      outline:none;
+      box-shadow:var(--focus);
+    }
 
-            input[type="number"], input[type="submit"] {
-                font-size: 16px;
-            }
+    .hint{
+      margin-top:14px;
+      font-size:13px;
+      color:var(--muted);
+    }
 
-            .summary-table th, .summary-table td,
-            .details-table th, .details-table td {
-                padding: 12px;
-            }
-
-            .formula {
-                font-size: 16px;
-            }
-        }
-    </style>
+    .hidden{ display:none !important; }
+  </style>
 </head>
 <body>
+  <div class="wrap">
+    <header>
+      <h1>Piping & Equipment Library</h1>
+      <p class="sub">A curated collection of technical reference materials and tools to support your work in ship systems design, mechanical analysis, and reporting.
+Use the tabs below to navigate to different sections. Search within a section using the filter. Enjoy!</p>
+    </header>
 
-    <h1>Pump Power Calculator</h1>
-    
-    <!-- Start of the form -->
-    <form id="pumpForm">
-        <div class="form-container">
-            <!-- Left section for project information -->
-            <div class="left-section">
-                <p>Project Information:</p>
-                <div class="form-group">
-                    <label for="projectName">Project Name:</label>
-                    <input type="text" id="projectName" name="projectName" required>
-                </div>
-                <div class="form-group">
-                    <label for="systemName">System Name:</label>
-                    <input type="text" id="systemName" name="systemName" required>
-                </div>
-                <div class="form-group">
-                    <label for="designerName">Designer Name:</label>
-                    <input type="text" id="designerName" name="designerName" required>
-                </div>
-                <div class="form-group">
-                    <label for="revision">Revision:</label>
-                    <input type="text" id="revision" name="revision" required>
-                </div>
-            </div>
+    <div class="toolbar">
+      <nav class="tabs" role="tablist" aria-label="Library sections">
+        <button class="tab-btn" role="tab" aria-selected="true" aria-controls="tab-piping" id="btn-piping">Piping</button>
+        <button class="tab-btn" role="tab" aria-selected="false" aria-controls="tab-equipment" id="btn-equipment">Equipment & VFI</button>
+        <button class="tab-btn" role="tab" aria-selected="false" aria-controls="tab-structural" id="btn-structural">Structural</button>
+        <button class="tab-btn" role="tab" aria-selected="false" aria-controls="tab-spreadsheets" id="btn-spreadsheets">Spreadsheets & Calculators</button>
+        <button class="tab-btn" role="tab" aria-selected="false" aria-controls="tab-templates" id="btn-templates">Templates & Symbols</button>
+        <button class="tab-btn" role="tab" aria-selected="false" aria-controls="tab-regulations" id="btn-regulations">Regulations</button>
+        <button class="tab-btn" role="tab" aria-selected="false" aria-controls="tab-help" id="btn-help">Help</button>
+      </nav>
+    </div>
 
-            <!-- Right section for calculator inputs -->
-            <div class="right-section">
-                <p>Calculator Inputs:</p>
-                <div class="form-group">
-                    <label for="flowRate">Flow Rate / Capacity (Q) [gpm]:</label>
-                    <input type="number" id="flowRate" name="flowRate" step="any" required>
-                </div>
-                <div class="form-group">
-                    <label for="head">Total Head Pressure (H) [m]:</label>
-                    <input type="number" id="head" name="head" step="any" required>
-                </div>
-                <div class="form-group">
-                    <label for="density">Fluid Density (ρ) [kg/m³]:</label>
-                    <input type="number" id="density" name="density" step="any" value="870" required>
-                </div>
-                <div class="form-group">
-                    <label for="gravity">Acceleration due to Gravity (g) [m/s²]:</label>
-                    <input type="number" id="gravity" name="gravity" step="any" value="9.81" required>
-                </div>
-                <div class="form-group">
-                    <label for="efficiency">Pump Efficiency (η) [%]:</label>
-                    <input type="number" id="efficiency" name="efficiency" step="any" value="85" required>
-                </div>
-            </div>
+    <!-- PIPING -->
+    <section class="panel" role="tabpanel" id="tab-piping" aria-labelledby="btn-piping" data-active="true">
+      <h2>Piping</h2>
+      <p>Core piping components.</p>
+
+      <div class="grid">
+        
+        <div class="card" data-tags="fittings elbows tees reducers caps plugs unions">
+          <p class="title">Fittings</p>
+          <p class="desc">Elbows, tees, reducers, caps, plugs, unions, and related fittings.</p>
+          <div class="actions">
+            <a class="btn" href="PLACEHOLDER.html">Open</a>
+          </div>
         </div>
 
-        <div style="max-width: 950px; margin: 0 auto;">
-            <input type="submit" value="Calculate Pump Power">
+        <div class="card" data-tags="flanges gaskets bolting asme ansi din jis">
+          <p class="title">Flanges</p>
+          <p class="desc">Flange types organized by standard.</p>
+          <div class="actions">
+            <a class="btn" href="PLACEHOLDER.html">Open</a>
+          </div>
         </div>
-    </form>
-    <!-- End of the form -->
 
-    <script>
-        document.getElementById('pumpForm').addEventListener('submit', function(e) {
-            e.preventDefault();
+        <div class="card" data-tags="valves gate globe ball butterfly check relief quick closing sea">
+          <p class="title">Valves</p>
+          <p class="desc">Gate, globe, ball, butterfly, check, relief, quick closing, sea valves, and specialty types.</p>
+          <div class="actions">
+            <a class="btn" href="PLACEHOLDER.html">Open</a>
+          </div>
+        </div>
 
-            // Retrieve input values
-            const projectName = document.getElementById('projectName').value;
-            const systemName = document.getElementById('systemName').value;
-            const designerName = document.getElementById('designerName').value;
-            const revision = document.getElementById('revision').value;
-            const Q_gpm = parseFloat(document.getElementById('flowRate').value);
-            const H = parseFloat(document.getElementById('head').value);
-            const rho = parseFloat(document.getElementById('density').value);
-            const g = parseFloat(document.getElementById('gravity').value);
-            const eta_percent = parseFloat(document.getElementById('efficiency').value);
-            const eta = eta_percent / 100; // Convert percentage to decimal
+        <div class="card" data-tags="supports hangers clamps u-bolts guides anchors shoes">
+          <p class="title">Supports & Hangers</p>
+          <p class="desc">Common pipe support hardware, guides, anchors, and shoes.</p>
+          <div class="actions">
+            <a class="btn" href="PLACEHOLDER.html">Open</a>
+          </div>
+        </div>
 
-            // Validate inputs
-            if (Q_gpm <= 0 || H <= 0 || rho <= 0 || g <= 0 || eta <= 0) {
-                alert("Please enter positive values for all parameters.");
-                return;
-            }
+        <div class="card" data-tags="expansion joints bellows flex hose vibration">
+          <p class="title">Expansion & Flex</p>
+          <p class="desc">Expansion joints, bellows, flexible connectors, and hose assemblies.</p>
+          <div class="actions">
+            <a class="btn" href="PLACEHOLDER.html">Open</a>
+          </div>
+        </div>
 
-            // Calculations
-            // 1. Convert Q from gpm to m³/s
-            const Q_m3s = Q_gpm * 0.00378541 / 60;
+        <div class="card" data-tags="instrumentation pressure flow temperature gauge meter transmitter sensor">
+          <p class="title">Instrumentation</p>
+          <p class="desc">Gauges, meters, transmitters, sensors, and control accessories for pressure, flow, and temperature.</p>
+          <div class="actions">
+            <a class="btn" href="PLACEHOLDER.html">Open</a>
+          </div>
+        </div>
+      </div>
 
-            // 2. Hydraulic Power (W) = rho * g * Q * H
-            const Ph_watts = rho * g * Q_m3s * H;
+      <div class="hint">Tip: Keep folder names stable. Your HTML links won't break if you only add files inside existing folders.</div>
+    </section>
 
-            // 3. Shaft Power (W) = Ph / eta
-            const Ps_watts = Ph_watts / eta;
+    <!-- EQUIPMENT -->
+    <section class="panel" role="tabpanel" id="tab-equipment" aria-labelledby="btn-equipment" data-active="false">
+      <h2>Equipment and VFI</h2>
+      <p>Active machinery and packaged items that connect into piping systems.</p>
 
-            // 4. Convert to kW
-            const Ph_kw = Ph_watts / 1000;
-            const Ps_kw = Ps_watts / 1000;
+      <div class="grid">
+        <div class="card" data-tags="pumps centrifugal gear screw diaphragm pd submersible">
+          <p class="title">Pumps</p>
+          <p class="desc">Centrifugal and positive displacement pump blocks, typical sets, and arrangements.</p>
+          <div class="actions">
+            <a class="btn" href="PLACEHOLDER.html">Open</a>
+          </div>
+        </div>
 
-            // 5. Convert Shaft Power to HP
-            const Hp = Ps_kw * 1.34102;
+        <div class="card" data-tags="heat exchanger cooler heater plate shell tube">
+          <p class="title">Heat Exchangers</p>
+          <p class="desc">Shell-and-tube, plate, coolers, heaters, and common skid arrangements.</p>
+          <div class="actions">
+            <a class="btn" href="PLACEHOLDER.html">Open</a>
+          </div>
+        </div>
 
-            // 6. Calculate Electric Motor Power (add 15% margin)
-            const motorPower_kw = Ps_kw * 1.15;
+        <div class="card" data-tags="tanks vessels pressure vessel reservoir day tank">
+          <p class="title">Tanks & Vessels</p>
+          <p class="desc">Expansion tanks, pressure vessels, reservoirs, and related equipment.</p>
+          <div class="actions">
+            <a class="btn" href="PLACEHOLDER.html">Open</a>
+          </div>
+        </div>
 
-            // Round values to two decimal places
-            const Ph_kw_rounded = Ph_kw.toFixed(2);
-            const Ps_kw_rounded = Ps_kw.toFixed(2);
-            const Hp_rounded = Hp.toFixed(2);
-            const motorPower_rounded = motorPower_kw.toFixed(2);
-            const Q_m3s_rounded = Q_m3s.toFixed(5);
+        <div class="card" data-tags="cad block links resources library download">
+          <p class="title">CAD Block Links</p>
+          <p class="desc">External resources and links to CAD block libraries and downloadable content.</p>
+          <div class="actions">
+            <a class="btn" href="PLACEHOLDER.html">Open</a>
+          </div>
+        </div>
 
-            // Create a new window and generate the report content
-            const reportWindow = window.open("", "_blank");
-            const reportContent = `
-                <html>
-                    <head>
-                        <title>Determination of Pump Power Requirements</title>
-                        <style>
-                            body { font-family: 'Segoe UI', sans-serif; padding: 20px; }
-                            h2 { color: #2c3e50; }
-                            table { width: 100%; border-collapse: collapse; margin-bottom: 30px; }
-                            th, td { border: 1px solid #ddd; padding: 10px; text-align: left; }
-                            th { background-color: #f1f1f1; font-weight: bold; }
-                            .formula { text-align: center; background-color: #f9f9f9; padding: 10px; margin: 20px 0; border-left: 4px solid #2980b9; }
-                            .calculation { text-align: center; margin-top: 10px; font-size: 16px; color: #555; }
-                        </style>
-                    </head>
-                    <body>
-                        <h2>Determination of Pump Power Requirements</h2>
-                        <p><strong>Project:</strong> ${projectName}</p>
-                        <p><strong>System:</strong> ${systemName}</p>
-                        <p><strong>Date:</strong> ${new Date().toLocaleDateString()}</p>
-                        <p><strong>Designer:</strong> ${designerName}</p>
-                        <p><strong>Revision:</strong> ${revision}</p>
-                        
-                        <h2>Summary of Results</h2>
-                        <table>
-                            <tr><th>Parameter</th><th>Value</th><th>Units</th></tr>
-                            <tr><td>Flow Rate (Q)</td><td>${Q_gpm}</td><td>gpm</td></tr>
-                            <tr><td>Total Head Pressure (H)</td><td>${H}</td><td>m</td></tr>
-                            <tr><td>Fluid Density (ρ)</td><td>${rho}</td><td>kg/m³</td></tr>
-                            <tr><td>Acceleration due to Gravity (g)</td><td>${g}</td><td>m/s²</td></tr>
-                            <tr><td>Pump Efficiency (η)</td><td>${eta_percent}</td><td>%</td></tr>
-                            <tr><td>Hydraulic Power (Pₕ)</td><td>${Ph_kw_rounded}</td><td>kW</td></tr>
-                            <tr><td>Shaft Power (Pₛₕₐₓ)</td><td>${Ps_kw_rounded}</td><td>kW</td></tr>
-                            <tr><td>Power Output (HP)</td><td>${Hp_rounded}</td><td>HP</td></tr>
-                            <tr><td>Electric Motor Power</td><td>${motorPower_rounded}</td><td>kW</td></tr>
-                        </table>
+        <div class="card" data-tags="vfi vendor furnished information specifications datasheets">
+          <p class="title">Vendor Furnished Information (VFI) Links</p>
+          <p class="desc">Links to vendor documentation, specifications, and technical data sheets.</p>
+          <div class="actions">
+            <a class="btn" href="PLACEHOLDER.html">Open</a>
+          </div>
+        </div>
+      </div>
+    </section>
 
-                        <h2>Formulas and Calculations</h2>
-                        <h4>Flow Rate Conversion (Q)</h4>
-                        <p class="section-description">The flow rate is converted from gpm to m³/s to maintain consistent units for calculations.</p>
-                        <p class="formula">Q (m³/s) = Q (gpm) × 0.00378541 / 60</p>
-                        <p class="calculation">Calculated Flow Rate (Q) = ${Q_m3s_rounded} m³/s</p>
+    <!-- STRUCTURAL -->
+    <section class="panel" role="tabpanel" id="tab-structural" aria-labelledby="btn-structural" data-active="false">
+      <h2>Structural</h2>
+      <p>Structural components, supports, and related materials.</p>
 
-                        <h4>Hydraulic Power (Pₕ)</h4>
-                        <p class="section-description">Hydraulic power represents the ideal power needed to move the fluid through the system.</p>
-                        <p class="formula">Pₕ = ρ × g × Q × H</p>
-                        <p class="calculation">Calculated Hydraulic Power (Pₕ) = ${Ph_watts.toFixed(2)} W</p>
+      <div class="grid">
+        <div class="card" data-tags="beams columns girders structural steel">
+          <p class="title">Structural Steel</p>
+          <p class="desc">Beams, columns, girders, and common structural steel shapes.</p>
+          <div class="actions">
+            <a class="btn" href="PLACEHOLDER.html">Open</a>
+          </div>
+        </div>
 
-                        <h4>Shaft Power (Pₛₕₐₓ)</h4>
-                        <p class="section-description">Shaft power accounts for pump efficiency and indicates the actual power required by the motor.</p>
-                        <p class="formula">Pₛₕₐₓ = Pₕ / η</p>
-                        <p class="calculation">Calculated Shaft Power (Pₛₕₐₓ) = ${Ps_watts.toFixed(2)} W</p>
+        <div class="card" data-tags="connections joints plates gussets">
+          <p class="title">Connections & Joints</p>
+          <p class="desc">Connection details, joint configurations, and attachment methods.</p>
+          <div class="actions">
+            <a class="btn" href="PLACEHOLDER.html">Open</a>
+          </div>
+        </div>
 
-                        <h4>Power Output (HP)</h4>
-                        <p class="section-description">The final result, Power Output, is expressed in horsepower, commonly used for motors.</p>
-                        <p class="formula">HP = Pₛₕₐₓ × 0.00134102</p>
-                        <p class="calculation">Calculated Power Output (HP) = ${Hp_rounded} HP</p>
-                    </body>
-                </html>
-            `;
-            reportWindow.document.write(reportContent);
-            reportWindow.document.close(); // Ensures content is rendered
+        <div class="card" data-tags="foundations mounts bases anchors">
+          <p class="title">Foundations & Mounts</p>
+          <p class="desc">Foundation details, equipment mounts, and anchor configurations.</p>
+          <div class="actions">
+            <a class="btn" href="PLACEHOLDER.html">Open</a>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- SPREADSHEETS -->
+    <section class="panel" role="tabpanel" id="tab-spreadsheets" aria-labelledby="btn-spreadsheets" data-active="false">
+      <h2>Spreadsheets & Calculators</h2>
+      <p>Engineering calculation tools and spreadsheet templates.</p>
+
+      <div class="grid">
+        <div class="card" data-tags="piping calculations pressure drop flow velocity">
+          <p class="title">Piping Calculations</p>
+          <p class="desc">Flow calculations, pressure drop, velocity, and sizing tools.</p>
+          <div class="actions">
+            <a class="btn" href="PLACEHOLDER.html">Open</a>
+          </div>
+        </div>
+
+        <div class="card" data-tags="pump sizing selection head npsh">
+          <p class="title">Pump Selection</p>
+          <p class="desc">Pump sizing, head calculations, NPSH, and selection tools.</p>
+          <div class="actions">
+            <a class="btn" href="PLACEHOLDER.html">Open</a>
+          </div>
+        </div>
+
+        <div class="card" data-tags="heat transfer exchanger thermal sizing">
+          <p class="title">Heat Transfer</p>
+          <p class="desc">Heat exchanger sizing, thermal calculations, and performance tools.</p>
+          <div class="actions">
+            <a class="btn" href="PLACEHOLDER.html">Open</a>
+          </div>
+        </div>
+
+        <div class="card" data-tags="structural loads stress analysis">
+          <p class="title">Structural Analysis</p>
+          <p class="desc">Load calculations, stress analysis, and structural design tools.</p>
+          <div class="actions">
+            <a class="btn" href="PLACEHOLDER.html">Open</a>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- TEMPLATES -->
+    <section class="panel" role="tabpanel" id="tab-templates" aria-labelledby="btn-templates" data-active="false">
+      <h2>Templates & Symbols</h2>
+      <p>Drawing aids, common symbols, title blocks, and reference layouts.</p>
+
+      <div class="grid">
+        <div class="card" data-tags="symbols p&id pid isometric schematic legend">
+          <p class="title">P&amp;ID Symbols</p>
+          <p class="desc">Symbols and legends used for schematic drawings.</p>
+          <div class="actions">
+            <a class="btn" href="PLACEHOLDER.html">Open</a>
+          </div>
+        </div>
+
+        <div class="card" data-tags="templates title block layers linetypes">
+          <p class="title">CAD Templates</p>
+          <p class="desc">Title blocks, layers, linetypes, and plotting setups.</p>
+          <div class="actions">
+            <a class="btn" href="PLACEHOLDER.html">Open</a>
+          </div>
+        </div>
+
+        <div class="card" data-tags="assemblies skids typical install">
+          <p class="title">System Assemblies</p>
+          <p class="desc">Typical arrangements and standard assemblies used in layouts.</p>
+          <div class="actions">
+            <a class="btn" href="PLACEHOLDER.html">Open</a>
+          </div>
+        </div>
+
+        <div class="card" data-tags="standards specifications requirements codes asme ansi iso">
+          <p class="title">Design Standards</p>
+          <p class="desc">Industry standards, specifications, and design code references.</p>
+          <div class="actions">
+            <a class="btn" href="PLACEHOLDER.html">Open</a>
+          </div>
+        </div>
+
+        <div class="card" data-tags="tools software links resources applications">
+          <p class="title">Design Tool Links</p>
+          <p class="desc">Links to design software, online tools, and engineering resources.</p>
+          <div class="actions">
+            <a class="btn" href="PLACEHOLDER.html">Open</a>
+          </div>
+        </div>
+
+        <div class="card" data-tags="report template documentation technical writing">
+          <p class="title">Technical Report Template</p>
+          <p class="desc">Standardized templates for technical reports, documentation, and analysis.</p>
+          <div class="actions">
+            <a class="btn" href="PLACEHOLDER.html">Open</a>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- REGULATIONS -->
+    <section class="panel" role="tabpanel" id="tab-regulations" aria-labelledby="btn-regulations" data-active="false">
+      <h2>Regulations</h2>
+      <p>Regulatory requirements, compliance documentation, and governing standards.</p>
+
+      <div class="grid">
+        <div class="card" data-tags="maritime solas imo marpol regulations">
+          <p class="title">Maritime Regulations</p>
+          <p class="desc">SOLAS, IMO, MARPOL, and other international maritime regulatory requirements.</p>
+          <div class="actions">
+            <a class="btn" href="PLACEHOLDER.html">Open</a>
+          </div>
+        </div>
+
+        <div class="card" data-tags="classification society abs dnv lloyd's register rules">
+          <p class="title">Classification Society Rules</p>
+          <p class="desc">ABS, DNV, Lloyd's Register, and other classification society requirements.</p>
+          <div class="actions">
+            <a class="btn" href="PLACEHOLDER.html">Open</a>
+          </div>
+        </div>
+
+        <div class="card" data-tags="environmental epa emissions pollution regulations">
+          <p class="title">Environmental Regulations</p>
+          <p class="desc">EPA standards, emissions requirements, and environmental compliance documents.</p>
+          <div class="actions">
+            <a class="btn" href="PLACEHOLDER.html">Open</a>
+          </div>
+        </div>
+
+        <div class="card" data-tags="safety osha compliance standards requirements">
+          <p class="title">Safety Standards</p>
+          <p class="desc">OSHA requirements, safety protocols, and workplace safety standards.</p>
+          <div class="actions">
+            <a class="btn" href="PLACEHOLDER.html">Open</a>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- HELP -->
+    <section class="panel" role="tabpanel" id="tab-help" aria-labelledby="btn-help" data-active="false">
+      <h2>Help</h2>
+      <p>Common questions and troubleshooting for using this library package.</p>
+
+      <div class="grid">
+        <div class="card" data-tags="how to use unzip extract">
+          <p class="title">How to use this ZIP</p>
+          <p class="desc">Extract the ZIP first. Then open index.html from the extracted folder. Do not run from inside the ZIP viewer.</p>
+          <div class="actions">
+            <a class="btn" href="PLACEHOLDER.html">Open</a>
+          </div>
+        </div>
+
+        <div class="card" data-tags="dwg step open autocad viewer">
+          <p class="title">Opening DWG/STEP files</p>
+          <p class="desc">DWG/STEP files typically download and open in AutoCAD or a CAD viewer. Browsers do not preview these natively.</p>
+          <div class="actions">
+            <a class="btn" href="PLACEHOLDER.html">More details</a>
+          </div>
+        </div>
+
+        <div class="card" data-tags="broken links rename folders">
+          <p class="title">If links break</p>
+          <p class="desc">Keep folder names the same as referenced in index.html. Adding files is safe; renaming folders changes paths.</p>
+          <div class="actions">
+            <a class="btn" href="PLACEHOLDER.html">Read note</a>
+          </div>
+        </div>
+      </div>
+    </section>
+  </div>
+
+  <script>
+    (function(){
+      const tabButtons = Array.from(document.querySelectorAll('.tab-btn'));
+      const panels = Array.from(document.querySelectorAll('.panel'));
+
+      function setActiveTab(btn){
+        tabButtons.forEach(b => b.setAttribute('aria-selected', String(b === btn)));
+        panels.forEach(p => p.dataset.active = "false");
+
+        const targetId = btn.getAttribute('aria-controls');
+        const target = document.getElementById(targetId);
+        if(target) target.dataset.active = "true";
+      }
+
+      // Mouse click
+      tabButtons.forEach(btn => {
+        btn.addEventListener('click', () => setActiveTab(btn));
+      });
+
+      // Keyboard navigation (Left/Right)
+      tabButtons.forEach((btn, idx) => {
+        btn.addEventListener('keydown', (e) => {
+          if(e.key !== 'ArrowLeft' && e.key !== 'ArrowRight') return;
+          e.preventDefault();
+          const dir = e.key === 'ArrowRight' ? 1 : -1;
+          const next = (idx + dir + tabButtons.length) % tabButtons.length;
+          tabButtons[next].focus();
+          setActiveTab(tabButtons[next]);
         });
-    </script>
-
+      });
+    })();
+  </script>
 </body>
 </html>
-
-
