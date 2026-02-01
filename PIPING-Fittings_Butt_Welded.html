@@ -1,0 +1,831 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Butt-Weld Fitting Generator (ASME B16.9)</title>
+  <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
+  <style>
+    body { margin: 0; overflow: hidden; background-color: #f3f4f6; }
+    #canvas-container { width: 100%; height: 100vh; display: block; }
+    .overlay { position: absolute; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; }
+    .panel { pointer-events: auto; }
+    ::-webkit-scrollbar { width: 8px; height: 8px; }
+    ::-webkit-scrollbar-track { background: #f1f1f1; }
+    ::-webkit-scrollbar-thumb { background: #888; border-radius: 4px; }
+    ::-webkit-scrollbar-thumb:hover { background: #555; }
+
+    /* Custom radio styling */
+    .type-radio:checked + div {
+      background-color: #eff6ff; /* blue-50 */
+      border-color: #60a5fa;     /* blue-400 */
+    }
+  </style>
+  <script type="importmap">
+    {
+      "imports": {
+        "three": "https://unpkg.com/three@0.160.0/build/three.module.js",
+        "three/addons/": "https://unpkg.com/three@0.160.0/examples/jsm/"
+      }
+    }
+  </script>
+</head>
+
+<body class="text-gray-800 font-sans">
+  <div id="canvas-container"></div>
+
+  <div class="overlay flex flex-col md:flex-row justify-between p-4 md:p-6 gap-4">
+
+    <div class="panel bg-white/90 backdrop-blur shadow-lg rounded-xl p-6 w-full md:w-96 flex flex-col gap-4 border border-gray-200 h-fit max-h-[90vh] overflow-y-auto">
+      <h1 class="text-2xl font-bold text-slate-700">Fitting Generator</h1>
+      <p class="text-sm text-gray-500">Butt-Weld (ASME B16.9) — STL + DXF Centerlines/Profiles</p>
+
+      <!-- Fitting Type Grid -->
+      <div>
+        <label class="block text-sm font-medium text-gray-700 mb-2">Select Fitting Type</label>
+        <div class="grid grid-cols-2 gap-2">
+          <label class="cursor-pointer">
+            <input type="radio" name="fit-type" value="elbow90" class="type-radio hidden" checked>
+            <div class="border border-gray-200 rounded-lg p-2 text-center hover:bg-gray-50 transition text-sm font-medium">90° Elbow</div>
+          </label>
+          <label class="cursor-pointer">
+            <input type="radio" name="fit-type" value="elbow45" class="type-radio hidden">
+            <div class="border border-gray-200 rounded-lg p-2 text-center hover:bg-gray-50 transition text-sm font-medium">45° Elbow</div>
+          </label>
+
+          <label class="cursor-pointer">
+            <input type="radio" name="fit-type" value="elbow180" class="type-radio hidden">
+            <div class="border border-gray-200 rounded-lg p-2 text-center hover:bg-gray-50 transition text-sm font-medium">180° Return</div>
+          </label>
+          <label class="cursor-pointer">
+            <input type="radio" name="fit-type" value="red-elbow90" class="type-radio hidden">
+            <div class="border border-gray-200 rounded-lg p-2 text-center hover:bg-gray-50 transition text-sm font-medium">90° Reducing Elbow</div>
+          </label>
+
+          <label class="cursor-pointer">
+            <input type="radio" name="fit-type" value="red-elbow45" class="type-radio hidden">
+            <div class="border border-gray-200 rounded-lg p-2 text-center hover:bg-gray-50 transition text-sm font-medium">45° Reducing Elbow</div>
+          </label>
+          <label class="cursor-pointer">
+            <input type="radio" name="fit-type" value="tee" class="type-radio hidden">
+            <div class="border border-gray-200 rounded-lg p-2 text-center hover:bg-gray-50 transition text-sm font-medium">Tee</div>
+          </label>
+
+          <label class="cursor-pointer">
+            <input type="radio" name="fit-type" value="reducing-tee" class="type-radio hidden">
+            <div class="border border-gray-200 rounded-lg p-2 text-center hover:bg-gray-50 transition text-sm font-medium">Reducing Tee</div>
+          </label>
+          <label class="cursor-pointer">
+            <input type="radio" name="fit-type" value="reducer" class="type-radio hidden">
+            <div class="border border-gray-200 rounded-lg p-2 text-center hover:bg-gray-50 transition text-sm font-medium">Concentric Reducer</div>
+          </label>
+
+          
+          <label class="cursor-pointer">
+            <input type="radio" name="fit-type" value="ecc-reducer" class="type-radio hidden">
+            <div class="border border-gray-200 rounded-lg p-2 text-center hover:bg-gray-50 transition text-sm font-medium">Eccentric Reducer</div>
+          </label>
+          <label class="cursor-pointer">
+            <input type="radio" name="fit-type" value="cross" class="type-radio hidden">
+            <div class="border border-gray-200 rounded-lg p-2 text-center hover:bg-gray-50 transition text-sm font-medium">Cross (4-Way)</div>
+          </label>
+<label class="cursor-pointer">
+            <input type="radio" name="fit-type" value="union" class="type-radio hidden">
+            <div class="border border-gray-200 rounded-lg p-2 text-center hover:bg-gray-50 transition text-sm font-medium">Union (STL only)</div>
+          </label>
+        </div>
+      </div>
+
+      <!-- Size Selection -->
+      <div>
+        <label class="block text-sm font-medium text-gray-700 mb-1">Nominal Size (NPS)</label>
+        <select id="size-select" class="w-full border border-gray-300 rounded-md p-2 focus:ring-2 focus:ring-blue-500 outline-none bg-white mb-2"></select>
+
+        <!-- Reducing Size -->
+        <div id="reducing-container" class="hidden">
+          <label class="block text-sm font-medium text-gray-700 mb-1">Reducing Size (NPS)</label>
+          <select id="size-select-2" class="w-full border border-gray-300 rounded-md p-2 focus:ring-2 focus:ring-blue-500 outline-none bg-white"></select>
+        
+        <!-- Eccentric Reducer Options -->
+        <div id="ecc-container" class="hidden mt-2">
+          <label class="block text-sm font-medium text-gray-700 mb-1">Eccentric Orientation</label>
+          <select id="ecc-flat" class="w-full border border-gray-300 rounded-md p-2 focus:ring-2 focus:ring-blue-500 outline-none bg-yellow-50">
+            <option value="top" selected>Flat on Top</option>
+            <option value="bottom">Flat on Bottom</option>
+          </select>
+        </div>
+</div>
+      </div>
+
+      <!-- Schedule / Thickness (STL only) -->
+      <div>
+        <label class="block text-sm font-medium text-gray-700 mb-1">Schedule (STL wall thickness)</label>
+        <select id="sch-select" class="w-full border border-gray-300 rounded-md p-2 focus:ring-2 focus:ring-blue-500 outline-none bg-white text-sm">
+          <option value="40">STD / Sch 40</option>
+          <option value="80">XS / Sch 80</option>
+          <option value="160">Sch 160</option>
+        </select>
+      </div>
+
+      <!-- Dimensions Table -->
+      <div class="bg-gray-50 rounded-lg p-3 border border-gray-200 text-sm">
+        <h3 class="font-semibold text-gray-700 border-b border-gray-200 pb-2 mb-2">Dimensions (mm)</h3>
+        <div class="grid grid-cols-2 gap-y-2 gap-x-4">
+          <span class="text-gray-500">Main OD:</span>
+          <span id="spec-od" class="font-medium text-right">-</span>
+
+          <span class="text-gray-500" id="lbl-dim1">Dim 1:</span>
+          <span id="spec-dim1" class="font-medium text-right">-</span>
+
+          <span class="text-gray-500" id="lbl-dim2">Dim 2:</span>
+          <span id="spec-dim2" class="font-medium text-right">-</span>
+
+          <span class="text-gray-500">Material:</span>
+          <span class="font-medium text-right">Carbon Steel</span>
+        </div>
+      </div>
+
+      <!-- Actions -->
+      <div class="pt-2 flex flex-col gap-2">
+        <button id="download-btn" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 px-4 rounded-lg transition shadow-md flex justify-center items-center gap-2 cursor-pointer">
+          <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+          </svg>
+          Download STL
+        </button>
+
+        <button id="download-dxf-btn" class="w-full bg-green-600 hover:bg-green-700 text-white font-bold py-3 px-4 rounded-lg transition shadow-md flex justify-center items-center gap-2 cursor-pointer">
+          <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+          </svg>
+          Download DXF
+        </button>
+
+        <!-- Simple insertable instruction box (below Download button) -->
+        <div style="margin-top:4px; padding:10px 14px; border:1px solid #e0d18a; border-radius:10px; background:#fff7cc; font-size:14px; line-height:1.4;">
+          <strong>How to create a solid component (LOFT)</strong>
+          <ol style="margin:6px 0 0 18px;">
+            <li>Select large circle</li>
+            <li>Select small circle</li>
+            <li>Press <code>Enter</code></li>
+            <li>Choose: <code>Guides</code> → Select arc</li>
+          </ol>
+        </div>
+      </div>
+    </div>
+
+    <div class="panel bg-white/80 backdrop-blur shadow-md rounded-lg p-3 h-fit self-end hidden md:block">
+      <p class="text-xs text-gray-500">
+        <strong>Left Click:</strong> Rotate <br>
+        <strong>Right Click:</strong> Pan <br>
+        <strong>Scroll:</strong> Zoom
+      </p>
+    </div>
+
+  </div>
+
+  <script type="module">
+    import * as THREE from 'three';
+    import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
+    import { STLExporter } from 'three/addons/exporters/STLExporter.js';
+
+    // --- Pipe OD data (mm) for NPS 2–36 (B36.10 typical ODs) ---
+    const OD_MM = {
+      2: 60.3, 3: 88.9, 4: 114.3, 5: 141.3, 6: 168.3, 8: 219.1,
+      10: 273.1, 12: 323.9, 14: 355.6, 16: 406.4, 18: 457.2,
+      20: 508.0, 22: 558.8, 24: 609.6, 26: 660.4, 28: 711.2,
+      30: 762.0, 32: 812.8, 34: 863.6, 36: 914.4
+    };
+    const NPS_LIST = Object.keys(OD_MM).map(Number).sort((a,b)=>a-b);
+
+    // --- ASME B16.9-ish helper dimensions (mm) ---
+    // Where we don't have table values, we use stable approximations:
+    //   LR elbow centerline radius ~ 1.5 * NPS * 25.4
+    //   45° C-to-E ~ 0.417 * (90° C-to-E)
+    //   180° C-to-C ~ 2.0 * (90° C-to-E)
+    //   Tee outlet C-to-E ~ ~0.79 * OD  (rough, for preview/dims box)
+    function c2e90_mm(nps){ return 1.5 * nps * 25.4; }
+    function c2e45_mm(nps){ return 0.417 * c2e90_mm(nps); }
+    function c2c180_mm(nps){ return 2.0 * c2e90_mm(nps); }
+    function teeCtoE_mm(nps){ return 0.79 * OD_MM[nps]; }
+
+    // --- Scene Setup ---
+    const container = document.getElementById('canvas-container');
+    const scene = new THREE.Scene();
+    scene.background = new THREE.Color(0xf3f4f6);
+
+    const camera = new THREE.PerspectiveCamera(45, window.innerWidth / window.innerHeight, 0.1, 50000);
+    camera.position.set(200, 200, 300);
+
+    const renderer = new THREE.WebGLRenderer({ antialias: true });
+    renderer.setSize(window.innerWidth, window.innerHeight);
+    renderer.shadowMap.enabled = true;
+    renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+    container.appendChild(renderer.domElement);
+
+    const controls = new OrbitControls(camera, renderer.domElement);
+    controls.enableDamping = true;
+
+    // --- Lighting ---
+    scene.add(new THREE.AmbientLight(0xffffff, 0.7));
+    const dirLight = new THREE.DirectionalLight(0xffffff, 1.0);
+    dirLight.position.set(100, 200, 100);
+    dirLight.castShadow = true;
+    scene.add(dirLight);
+    const backLight = new THREE.DirectionalLight(0xbfdbfe, 0.5);
+    backLight.position.set(-100, 50, -100);
+    scene.add(backLight);
+
+    // --- Materials ---
+    const materialMetal = new THREE.MeshStandardMaterial({
+      color: 0x64748b,
+      metalness: 0.5,
+      roughness: 0.5,
+      side: THREE.DoubleSide
+    });
+    const materialWeld = new THREE.MeshStandardMaterial({
+      color: 0x94a3b8,
+      metalness: 0.3,
+      roughness: 0.7
+    });
+
+    function frameObject(object) {
+      const box = new THREE.Box3().setFromObject(object);
+      if (box.isEmpty()) return;
+      const size = new THREE.Vector3();
+      const center = new THREE.Vector3();
+      box.getSize(size);
+      box.getCenter(center);
+
+      const maxDim = Math.max(size.x, size.y, size.z);
+      const dist = maxDim * 2.5;
+
+      const dir = new THREE.Vector3().subVectors(camera.position, controls.target).normalize();
+      camera.position.copy(center).add(dir.multiplyScalar(dist));
+      camera.near = dist * 0.01;
+      camera.far = dist * 10;
+      camera.updateProjectionMatrix();
+      controls.target.copy(center);
+      controls.update();
+    }
+
+    let currentMesh = null;
+
+    // --- Simple variable-radius elbow mesh (for reducing elbows preview/STL) ---
+    function buildReducingElbowMesh(od1, od2, bendR, angleRad, radialSegs=32, pathSegs=48){
+      const r1 = od1 / 2;
+      const r2 = od2 / 2;
+
+      const verts = [];
+      const indices = [];
+
+      // fixed binormal for planar curve
+      const B = new THREE.Vector3(0,0,1);
+
+      for(let i=0;i<=pathSegs;i++){
+        const t = i / pathSegs;
+        const a = t * angleRad;
+        const cx = bendR * Math.cos(a);
+        const cy = bendR * Math.sin(a);
+        const center = new THREE.Vector3(cx, cy, 0);
+
+        // tangent for CCW arc
+        const T = new THREE.Vector3(-Math.sin(a), Math.cos(a), 0).normalize();
+        const U = new THREE.Vector3().crossVectors(B, T).normalize(); // in-plane "radial"
+        const V = B.clone(); // out-of-plane
+
+        const rr = r1 + (r2 - r1) * t;
+
+        for(let j=0;j<radialSegs;j++){
+          const phi = (j / radialSegs) * Math.PI * 2;
+          const p = center.clone()
+            .add(U.clone().multiplyScalar(Math.cos(phi) * rr))
+            .add(V.clone().multiplyScalar(Math.sin(phi) * rr));
+          verts.push(p.x, p.y, p.z);
+        }
+      }
+
+      // connect rings
+      for(let i=0;i<pathSegs;i++){
+        const ring0 = i * radialSegs;
+        const ring1 = (i+1) * radialSegs;
+        for(let j=0;j<radialSegs;j++){
+          const jn = (j+1) % radialSegs;
+
+          const a = ring0 + j;
+          const b = ring0 + jn;
+          const c = ring1 + j;
+          const d = ring1 + jn;
+
+          // two triangles (a,c,b) and (b,c,d)
+          indices.push(a, c, b);
+          indices.push(b, c, d);
+        }
+      }
+
+      const geo = new THREE.BufferGeometry();
+      geo.setAttribute('position', new THREE.Float32BufferAttribute(verts, 3));
+      geo.setIndex(indices);
+      geo.computeVertexNormals();
+
+      const mesh = new THREE.Mesh(geo, materialMetal);
+      return mesh;
+    }
+
+    function createFitting(type, size, size2, schedule) {
+      if (currentMesh) {
+        scene.remove(currentMesh);
+        currentMesh.traverse(c => { if (c.geometry) c.geometry.dispose(); });
+        currentMesh = null;
+      }
+
+      const od = OD_MM[size];
+      if (!od) return null;
+
+      const group = new THREE.Group();
+
+      // Wall thickness (visual only)
+      const thickRatio = schedule === '160' ? 0.14 : (schedule === '80' ? 0.10 : 0.06);
+      const outerR = od / 2;
+      const radialSegs = 32;
+
+      if (type === 'elbow90' || type === 'elbow45' || type === 'elbow180') {
+        const bendR = c2e90_mm(size);
+        let arcAngle = Math.PI / 2;
+        if (type === 'elbow45') arcAngle = Math.PI / 4;
+        if (type === 'elbow180') arcAngle = Math.PI;
+
+        const torusGeo = new THREE.TorusGeometry(bendR, outerR, radialSegs, 40, arcAngle);
+        const mesh = new THREE.Mesh(torusGeo, materialMetal);
+        group.add(mesh);
+
+      } else if (type === 'red-elbow90' || type === 'red-elbow45') {
+        const od2 = OD_MM[size2] || od;
+        const bendR = c2e90_mm(size);
+        const angleRad = (type === 'red-elbow90') ? (Math.PI/2) : (Math.PI/4);
+        group.add(buildReducingElbowMesh(od, od2, bendR, angleRad, 32, 52));
+
+      } else if (type === 'tee' || type === 'reducing-tee') {
+        const runC2E = teeCtoE_mm(size);
+        const runLen = runC2E * 2;
+
+        const runGeo = new THREE.CylinderGeometry(outerR, outerR, runLen, radialSegs);
+        runGeo.rotateZ(Math.PI / 2);
+        group.add(new THREE.Mesh(runGeo, materialMetal));
+
+        let branchSize = size;
+        if (type === 'reducing-tee' && size2 && size2 < size) branchSize = size2;
+        const bod = OD_MM[branchSize] || od;
+        const bR = bod / 2;
+        const branchH = runC2E;
+
+        const branchGeo = new THREE.CylinderGeometry(bR, bR, branchH, radialSegs);
+        branchGeo.translate(0, branchH/2, 0);
+        group.add(new THREE.Mesh(branchGeo, materialMetal));
+
+      } else if (type === 'reducer') {
+        const od2 = OD_MM[size2] || od;
+        const L = Math.max(203, 0.75 * od); // keep a sensible min length
+        const geo = new THREE.CylinderGeometry(od2/2, od/2, L, radialSegs);
+        geo.rotateZ(Math.PI/2); // horizontal
+        group.add(new THREE.Mesh(geo, materialMetal));
+
+      } else if (type === 'ecc-reducer') {
+        const od2 = OD_MM[size2] || od;
+        const L = Math.max(203, 0.75 * od); // mm
+        const e = (od - od2) / 2;
+        const flat = (document.getElementById('ecc-flat')?.value || 'top');
+        const dz = (flat === 'top') ? -e : +e;
+
+        // Build a frustum (axis = Y), then linearly offset Z along its length so the small end is eccentric.
+        const geo = new THREE.CylinderGeometry(od2/2, od/2, L, radialSegs, 1, false);
+        const pos = geo.attributes.position;
+        for (let i = 0; i < pos.count; i++){
+          const y = pos.getY(i);           // -L/2 .. +L/2
+          const t = (y + L/2) / L;         // 0 at large end, 1 at small end
+          pos.setZ(i, pos.getZ(i) + t * dz);
+        }
+        pos.needsUpdate = true;
+        geo.computeVertexNormals();
+
+        // Rotate to horizontal (axis ~ X)
+        geo.rotateZ(Math.PI/2);
+        group.add(new THREE.Mesh(geo, materialMetal));
+
+      } else if (type === 'cross') {
+        const od2 = OD_MM[size2] || od;
+        const runL = Math.max(200, Math.round(3.0 * od));
+        const branchL = runL;
+
+        // Run along X
+        const runGeo = new THREE.CylinderGeometry(outerR, outerR, runL, radialSegs);
+        runGeo.rotateZ(Math.PI/2);
+        group.add(new THREE.Mesh(runGeo, materialMetal));
+
+        // Branch along Y (vertical)
+        const bR = od2 / 2;
+        const brGeo = new THREE.CylinderGeometry(bR, bR, branchL, radialSegs);
+        group.add(new THREE.Mesh(brGeo, materialMetal));
+
+      } else if (type === 'union') {
+        const len = od * 1.5;
+        const hubLen = len * 0.35;
+        const nutLen = len * 0.3;
+
+        const h1 = new THREE.CylinderGeometry(outerR, outerR, hubLen, radialSegs);
+        h1.rotateZ(Math.PI/2);
+        h1.translate(-len/2 + hubLen/2, 0, 0);
+        group.add(new THREE.Mesh(h1, materialMetal));
+
+        const h2 = new THREE.CylinderGeometry(outerR, outerR, hubLen, radialSegs);
+        h2.rotateZ(Math.PI/2);
+        h2.translate(len/2 - hubLen/2, 0, 0);
+        group.add(new THREE.Mesh(h2, materialMetal));
+
+        const nutR = outerR * 1.6;
+        const nutGeo = new THREE.CylinderGeometry(nutR, nutR, nutLen, 6);
+        nutGeo.rotateZ(Math.PI/2);
+        group.add(new THREE.Mesh(nutGeo, materialWeld));
+      }
+
+      scene.add(group);
+      currentMesh = group;
+      frameObject(group);
+
+      // --- Return dimensions for UI ---
+      const dims = { od };
+
+      if (type === 'elbow90') {
+        dims.lbl1 = 'Centerline Radius:'; dims.val1 = c2e90_mm(size);
+        dims.lbl2 = 'Angle:'; dims.val2 = '90°';
+      } else if (type === 'elbow45') {
+        dims.lbl1 = 'Centerline Radius:'; dims.val1 = c2e90_mm(size);
+        dims.lbl2 = 'Angle:'; dims.val2 = '45°';
+      } else if (type === 'elbow180') {
+        dims.lbl1 = 'Centerline Radius:'; dims.val1 = c2e90_mm(size);
+        dims.lbl2 = 'Angle:'; dims.val2 = '180°';
+      } else if (type === 'red-elbow90' || type === 'red-elbow45') {
+        const od2 = OD_MM[size2] || od;
+        dims.lbl1 = 'Large OD:'; dims.val1 = od.toFixed(1);
+        dims.lbl2 = 'Small OD:'; dims.val2 = od2.toFixed(1);
+      } else if (type === 'tee') {
+        dims.lbl1 = 'Run C-to-E:'; dims.val1 = teeCtoE_mm(size).toFixed(1);
+        dims.lbl2 = 'Branch OD:'; dims.val2 = od.toFixed(1);
+      } else if (type === 'reducing-tee') {
+        const bod = OD_MM[size2] || od;
+        dims.lbl1 = 'Run C-to-E:'; dims.val1 = teeCtoE_mm(size).toFixed(1);
+        dims.lbl2 = 'Branch OD:'; dims.val2 = bod.toFixed(1);
+      } else if (type === 'reducer') {
+        const od2 = OD_MM[size2] || od;
+        dims.lbl1 = 'Large OD:'; dims.val1 = od.toFixed(1);
+        dims.lbl2 = 'Small OD:'; dims.val2 = od2.toFixed(1);
+            } else if (type === 'ecc-reducer') {
+        const od2 = OD_MM[size2] || od;
+        const flat = (document.getElementById('ecc-flat')?.value || 'top');
+        dims.lbl1 = 'Large OD:'; dims.val1 = od.toFixed(1);
+        dims.lbl2 = `Small OD (${flat}):`; dims.val2 = od2.toFixed(1);
+      } else if (type === 'cross') {
+        const od2 = OD_MM[size2] || od;
+        dims.lbl1 = 'Run OD:'; dims.val1 = od.toFixed(1);
+        dims.lbl2 = 'Branch OD:'; dims.val2 = od2.toFixed(1);
+      } else if (type === 'union') {
+
+        dims.lbl1 = 'Length:'; dims.val1 = (od * 1.5).toFixed(1);
+        dims.lbl2 = 'Nut Width:'; dims.val2 = (od * 1.6 * 2).toFixed(1);
+      }
+
+      return dims;
+    }
+
+    // --- UI Handling ---
+    const sizeSelect = document.getElementById('size-select');
+    const sizeSelect2 = document.getElementById('size-select-2');
+    const reducingContainer = document.getElementById('reducing-container');
+    const schSelect = document.getElementById('sch-select');
+    const radios = document.querySelectorAll('input[name="fit-type"]');
+
+    const specOd = document.getElementById('spec-od');
+    const specDim1 = document.getElementById('spec-dim1');
+    const specDim2 = document.getElementById('spec-dim2');
+    const lblDim1 = document.getElementById('lbl-dim1');
+    const lblDim2 = document.getElementById('lbl-dim2');
+
+    // Populate sizes (2–36)
+    for (const n of NPS_LIST) {
+      const opt = document.createElement('option');
+      opt.value = String(n);
+      opt.textContent = `${n}" (OD ${OD_MM[n]} mm)`;
+      sizeSelect.appendChild(opt);
+
+      const opt2 = opt.cloneNode(true);
+      sizeSelect2.appendChild(opt2);
+    }
+
+    function updateUI() {
+      const type = document.querySelector('input[name="fit-type"]:checked').value;
+      const size1 = parseFloat(sizeSelect.value);
+      const size2 = parseFloat(sizeSelect2.value);
+      const sch = schSelect.value;
+
+      // show reducer size when required
+      const needsReduce = (type === 'reducer' || type === 'reducing-tee' || type === 'red-elbow90' || type === 'red-elbow45' || type === 'ecc-reducer' || type === 'cross');
+      reducingContainer.classList.toggle('hidden', !needsReduce);
+
+      // show eccentric options only for eccentric reducer
+      document.getElementById('ecc-container').classList.toggle('hidden', type !== 'ecc-reducer');
+
+
+      // keep size2 <= size1 where it makes sense
+      if (needsReduce) {
+        // auto-clamp size2 list to <= size1
+        const allowed = NPS_LIST.filter(v => v <= size1);
+        const cur = size2;
+        sizeSelect2.innerHTML = "";
+        for (const v of allowed) {
+          const o = document.createElement('option');
+          o.value = String(v);
+          o.textContent = `${v}" (OD ${OD_MM[v]} mm)`;
+          if (v === cur) o.selected = true;
+          sizeSelect2.appendChild(o);
+        }
+        if (allowed.length && !allowed.includes(cur)) sizeSelect2.value = String(allowed[allowed.length-1]);
+      }
+
+      const dims = createFitting(type, size1, parseFloat(sizeSelect2.value), sch);
+
+      if (dims) {
+        specOd.textContent = `${Number(dims.od).toFixed(1)} mm`;
+        lblDim1.textContent = dims.lbl1 || 'Dim 1:';
+        lblDim2.textContent = dims.lbl2 || 'Dim 2:';
+        specDim1.textContent = (dims.val1 !== undefined && dims.val1 !== null) ? `${dims.val1}` + (isFinite(dims.val1) ? ' mm' : '') : '-';
+        specDim2.textContent = (dims.val2 !== undefined && dims.val2 !== null) ? `${dims.val2}` + (isFinite(dims.val2) ? ' mm' : '') : '-';
+      } else {
+        specOd.textContent = '-';
+        specDim1.textContent = '-';
+        specDim2.textContent = '-';
+      }
+
+      // DXF button disabled for union (STL only)
+      document.getElementById('download-dxf-btn').disabled = (type === 'union');
+      document.getElementById('download-dxf-btn').classList.toggle('opacity-50', type === 'union');
+      document.getElementById('download-dxf-btn').classList.toggle('cursor-not-allowed', type === 'union');
+    }
+
+    radios.forEach(r => r.addEventListener('change', updateUI));
+    sizeSelect.addEventListener('change', updateUI);
+    sizeSelect2.addEventListener('change', updateUI);
+    schSelect.addEventListener('change', updateUI);
+
+    // Init
+    sizeSelect.value = "10";
+    sizeSelect2.value = "8";
+    updateUI();
+
+    // --- Animation ---
+    function animate() {
+      requestAnimationFrame(animate);
+      controls.update();
+      renderer.render(scene, camera);
+    }
+    animate();
+
+    // --- Resize ---
+    window.addEventListener('resize', () => {
+      camera.aspect = window.innerWidth / window.innerHeight;
+      camera.updateProjectionMatrix();
+      renderer.setSize(window.innerWidth, window.innerHeight);
+      if (currentMesh) frameObject(currentMesh);
+    });
+
+    // --- STL Download (unchanged behavior) ---
+    document.getElementById('download-btn').addEventListener('click', () => {
+      if (!currentMesh) return;
+      const exporter = new STLExporter();
+      const result = exporter.parse(currentMesh, { binary: true });
+      const type = document.querySelector('input[name="fit-type"]:checked').value;
+      const size = sizeSelect.value;
+      const size2 = sizeSelect2.value;
+
+      const blob = new Blob([result], { type: 'application/octet-stream' });
+      const link = document.createElement('a');
+      link.href = URL.createObjectURL(blob);
+      link.download = (type.includes('red') || type.includes('reducing') || type === 'reducer')
+        ? `Fitting_${type}_${size}to${size2}in.stl`
+        : `Fitting_${type}_${size}in.stl`;
+      link.click();
+      URL.revokeObjectURL(link.href);
+    });
+
+    // =========================
+    // DXF EXPORT (R12 / AC1009)
+    // Centerline + end/profile circles, with circle planes normal to path (via OCS conversion)
+    // =========================
+
+    function dxfJoin(lines){ return lines.join("\n") + "\n"; }
+
+    function dot(a,b){ return a.x*b.x + a.y*b.y + a.z*b.z; }
+    function cross(a,b){
+      return { x: a.y*b.z - a.z*b.y, y: a.z*b.x - a.x*b.z, z: a.x*b.y - a.y*b.x };
+    }
+    function norm(v){ return Math.sqrt(v.x*v.x + v.y*v.y + v.z*v.z); }
+    function unit(v){
+      const n = norm(v);
+      if (n < 1e-12) return {x:0,y:0,z:1};
+      return { x: v.x/n, y: v.y/n, z: v.z/n };
+    }
+
+    // AutoCAD arbitrary axis algorithm (OCS basis from extrusion direction)
+    function wcsToOcs(P, N){
+      const n = unit(N);
+
+      let ax;
+      if (Math.abs(n.x) < 1.0/64.0 && Math.abs(n.y) < 1.0/64.0){
+        ax = {x:0,y:1,z:0};
+      } else {
+        ax = {x:0,y:0,z:1};
+      }
+
+      const xAxis = unit(cross(ax, n));
+      const yAxis = cross(n, xAxis);
+
+      return { x: dot(P, xAxis), y: dot(P, yAxis), z: dot(P, n) };
+    }
+
+    function addLayerTable(lines, layerNames){
+      // R12 layer table
+      lines.push("0","SECTION","2","TABLES");
+      lines.push("0","TABLE","2","LAYER","70",String(layerNames.length));
+      for (const lname of layerNames){
+        lines.push("0","LAYER","2",lname,"70","0","62","7","6","CONTINUOUS");
+      }
+      lines.push("0","ENDTAB","0","ENDSEC");
+    }
+
+    function addCircleNormal(lines, layer, centerWCS, radius, normalWCS){
+      const n = unit(normalWCS);
+      const c = wcsToOcs(centerWCS, n);
+
+      lines.push("0","CIRCLE");
+      lines.push("8", layer);
+      lines.push("10", String(c.x), "20", String(c.y), "30", String(c.z));
+      lines.push("40", String(radius));
+      lines.push("210", String(n.x), "220", String(n.y), "230", String(n.z));
+    }
+
+    function exportDXF(type, nps1, nps2){
+      const layerCL = "CENTERLINE";
+      const layerProf = "PROFILE";
+
+      const lines = [];
+      lines.push("0","SECTION","2","HEADER","9","$ACADVER","1","AC1009","0","ENDSEC");
+      addLayerTable(lines, [layerCL, layerProf]);
+
+      lines.push("0","SECTION","2","ENTITIES");
+
+      const od1 = OD_MM[nps1];
+      const r1 = od1 / 2;
+
+      if (type === "elbow90" || type === "elbow45" || type === "elbow180" || type === "red-elbow90" || type === "red-elbow45"){
+        const angleDeg = (type === "elbow45" || type === "red-elbow45") ? 45 : (type === "elbow180" ? 180 : 90);
+        const angleRad = angleDeg * Math.PI / 180;
+
+        const od2 = (type.startsWith("red-")) ? (OD_MM[nps2] || od1) : od1;
+        const r2 = od2 / 2;
+
+        const Rcl = c2e90_mm(nps1);
+
+        // ARC (center at origin, XY plane)
+        lines.push("0","ARC","8",layerCL,"10","0","20","0","30","0","40",String(Rcl),"50","0","51",String(angleDeg));
+
+        // endpoints in WCS
+        const p0 = { x: Rcl, y: 0, z: 0 };
+        const p1 = { x: Rcl*Math.cos(angleRad), y: Rcl*Math.sin(angleRad), z: 0 };
+
+        // tangents for CCW arc: t(a)=(-sin a, cos a, 0)
+        const t0 = { x: 0, y: 1, z: 0 };
+        const t1 = { x: -Math.sin(angleRad), y: Math.cos(angleRad), z: 0 };
+
+        addCircleNormal(lines, layerProf, p0, r1, t0);
+        addCircleNormal(lines, layerProf, p1, r2, t1);
+      }
+
+      else if (type === "tee" || type === "reducing-tee"){
+        const runC2E = teeCtoE_mm(nps1);
+        const runLen = runC2E * 2;
+
+        const left = { x: -runLen/2, y: 0, z: 0 };
+        const right = { x: runLen/2, y: 0, z: 0 };
+        const branchTop = { x: 0, y: runC2E, z: 0 };
+
+        // centerlines
+        lines.push("0","LINE","8",layerCL,"10",String(left.x),"20","0","30","0","11",String(right.x),"21","0","31","0");
+        lines.push("0","LINE","8",layerCL,"10","0","20","0","30","0","11","0","21",String(runC2E),"31","0");
+
+        // normals for circles (along centerline directions)
+        const nRun = { x: 1, y: 0, z: 0 };
+        const nBr = { x: 0, y: 1, z: 0 };
+
+        // run circles use main OD
+        addCircleNormal(lines, layerProf, left, r1, nRun);
+        addCircleNormal(lines, layerProf, right, r1, nRun);
+
+        // branch circle
+        const bod = (type === "reducing-tee") ? (OD_MM[nps2] || od1) : od1;
+        addCircleNormal(lines, layerProf, branchTop, bod/2, nBr);
+      }
+
+      else if (type === "reducer"){
+        const od2 = OD_MM[nps2] || od1;
+        const r2 = od2/2;
+
+        // Centerline length (mm). Keep a sensible default and scale with size.
+        // 10\"→8\" will come out at 203 mm by default.
+        const L = Math.max(203, Math.round(0.75 * od1));
+
+        // Centerline guide (this is the SWEEP path)
+        const p0 = { x: 0, y: 0, z: 0 };
+        const p1 = { x: L, y: 0, z: 0 };
+        lines.push("0","LINE","8",layerCL,"10",String(p0.x),"20",String(p0.y),"30",String(p0.z),
+                              "11",String(p1.x),"21",String(p1.y),"31",String(p1.z));
+
+        // Circles MUST be on the ends of the centerline
+        const n = { x: 1, y: 0, z: 0 }; // normal along the centerline direction (+X)
+        addCircleNormal(lines, layerProf, p0, r1, n); // large end at start
+        addCircleNormal(lines, layerProf, p1, r2, n); // small end at end
+      }
+
+
+      else if (type === "ecc-reducer"){
+        const od2 = OD_MM[nps2] || od1;
+        const r2 = od2/2;
+
+        const L = Math.max(203, Math.round(0.75 * od1));
+
+        // Centerline guide (SWEEP path)
+        const p0 = { x: 0, y: 0, z: 0 };
+        const p1 = { x: L, y: 0, z: 0 };
+        lines.push("0","LINE","8",layerCL,
+                              "10",String(p0.x),"20",String(p0.y),"30",String(p0.z),
+                              "11",String(p1.x),"21",String(p1.y),"31",String(p1.z));
+
+        // Eccentricity e = (OD_large - OD_small)/2
+        // Flat on Top => shift small circle DOWN (negative Y) so top edges align.
+        // Flat on Bottom => shift small circle UP (positive Y) so bottom edges align.
+        const e = (od1 - od2) / 2;
+        const flat = (document.getElementById('ecc-flat')?.value || 'top');
+        const dy = (flat === 'top') ? -e : +e;
+
+        const n = { x: 1, y: 0, z: 0 };
+        addCircleNormal(lines, layerProf, p0, r1, n);
+        addCircleNormal(lines, layerProf, {x:p1.x, y:dy, z:p1.z}, r2, n);
+      }
+
+      else if (type === "cross"){
+        const odBr = OD_MM[nps2] || od1;
+        const rBr = odBr / 2;
+
+        // Overall length (each axis). Simple, stable default.
+        const L = Math.max(200, Math.round(3.0 * od1));
+        const h = L / 2;
+
+        // Centerlines crossing at origin
+        lines.push("0","LINE","8",layerCL,"10",String(-h),"20","0","30","0","11",String(h),"21","0","31","0");
+        lines.push("0","LINE","8",layerCL,"10","0","20",String(-h),"30","0","11","0","21",String(h),"31","0");
+
+        // Profiles at ends (normal to each centerline)
+        addCircleNormal(lines, layerProf, {x:-h,y:0,z:0}, r1, {x:1,y:0,z:0});
+        addCircleNormal(lines, layerProf, {x: h,y:0,z:0}, r1, {x:1,y:0,z:0});
+        addCircleNormal(lines, layerProf, {x:0,y:-h,z:0}, rBr, {x:0,y:1,z:0});
+        addCircleNormal(lines, layerProf, {x:0,y: h,z:0}, rBr, {x:0,y:1,z:0});
+      }
+
+
+      lines.push("0","ENDSEC","0","EOF");
+      return dxfJoin(lines);
+    }
+
+    document.getElementById('download-dxf-btn').addEventListener('click', () => {
+      const type = document.querySelector('input[name="fit-type"]:checked').value;
+      if (type === 'union') return;
+
+      const nps1 = parseFloat(sizeSelect.value);
+      const nps2 = parseFloat(sizeSelect2.value);
+
+      const dxfContent = exportDXF(type, nps1, nps2);
+
+      const blob = new Blob([dxfContent], { type: 'application/dxf' });
+      const link = document.createElement('a');
+      link.href = URL.createObjectURL(blob);
+
+      const fname = (type.includes('red') || type.includes('reducing') || type === 'reducer')
+        ? `Fitting_${type}_${nps1}to${nps2}_mm_R12.dxf`
+        : `Fitting_${type}_${nps1}_mm_R12.dxf`;
+
+      link.download = fname;
+      link.click();
+      URL.revokeObjectURL(link.href);
+    });
+
+  </script>
+</body>
+</html>
