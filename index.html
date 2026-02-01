@@ -5,61 +5,63 @@
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>Piping & Equipment Library</title>
   <style>
-    :root{
-      --bg:#ffffff;
-      --text:#111827;
-      --muted:#6b7280;
-      --border:#e5e7eb;
-      --card:#ffffff;
-      --shadow:0 1px 8px rgba(0,0,0,0.06);
-      --radius:14px;
-      --pad:18px;
-      --max:1100px;
-      --tab:#f3f4f6;
-      --tabActive:#111827;
-      --tabActiveText:#ffffff;
-      --focus: 0 0 0 3px rgba(59,130,246,0.35);
-      --font: system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, "Apple Color Emoji","Segoe UI Emoji";
-      --nav-bg: #f9fafb;
+    :root {
+      /* --- GROUP 1: GLOBAL BRAND COLORS --- */
+      --bg: #ffffff;
+      --text: #111827;
+      --muted: #6b7280;
+      --border: #e5e7eb;
+      --nav-bg: #f9fafb; /* The light grey background used for the nav bar */
       --nav-hover: rgba(0,0,0,0.05);
+
+      /* --- GROUP 2: CARD & PANEL STYLE --- */
+      /* Default card color for "Under Development" */
+      --card-bg-dev: #fff1f2;           
+      /* Active card color */
+      --card-bg-active: #ffffff;
+      
+      /* Panel Background: Matches Nav Bar Grey */
+      --panel-bg: #f9fafb;          
+
+      /* --- GROUP 3: UI ELEMENTS & SPACING --- */
+      --shadow: 0 1px 8px rgba(0,0,0,0.06);
+      --radius: 14px;
+      --pad: 18px;
+      --max: 1100px;
+      --tabActive: #111827;
+      --tabActiveText: #ffffff;
+      --focus: 0 0 0 3px rgba(59,130,246,0.35);
+      --font: system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, sans-serif;
     }
 
-    *{ box-sizing:border-box; }
-    body{
-      margin:0;
-      font-family:var(--font);
-      background:var(--bg);
-      color:var(--text);
-      line-height:1.35;
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      font-family: var(--font);
+      background: var(--bg);
+      color: var(--text);
+      line-height: 1.35;
     }
 
-    .wrap{
-      max-width:var(--max);
-      margin:0 auto;
-      padding:28px 18px 40px;
+    .wrap {
+      max-width: var(--max);
+      margin: 0 auto;
+      padding: 28px 18px 40px;
     }
 
-    header{
-      display:flex;
-      flex-direction:column;
-      gap:10px;
-      margin-bottom:18px;
+    header {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      margin-bottom: 18px;
     }
 
-    h1{
-      font-size:26px;
-      margin:0;
-      letter-spacing:-0.2px;
-    }
+    h1 { font-size: 26px; margin: 0; letter-spacing: -0.2px; }
 
-    .sub{
-      color:var(--muted);
-      margin:0;
-      font-size:14px;
-    }
+    .sub { color: var(--muted); margin: 0; font-size: 14px; }
 
-    /* Modern Navigation Bar */
-    .toolbar{
+    /* --- NAVIGATION TOOLBAR --- */
+    .toolbar {
       background: var(--nav-bg);
       border-radius: 16px;
       padding: 0;
@@ -69,7 +71,7 @@
       overflow: hidden;
     }
 
-    .tabs{
+    .tabs {
       display: flex;
       gap: 0;
       flex-wrap: wrap;
@@ -77,7 +79,7 @@
       padding: 8px;
     }
 
-    .tab-btn{
+    .tab-btn {
       flex: 1;
       min-width: 120px;
       border: none;
@@ -90,683 +92,227 @@
       cursor: pointer;
       user-select: none;
       transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-      position: relative;
     }
 
-    .tab-btn:hover{
-      background: var(--nav-hover);
-      transform: translateY(-1px);
-    }
+    .tab-btn:hover { background: var(--nav-hover); transform: translateY(-1px); }
 
-    .tab-btn:focus{
-      outline: none;
-      box-shadow: 0 0 0 3px rgba(255,255,255,0.3);
-    }
-
-    .tab-btn[aria-selected="true"]{
+    .tab-btn[aria-selected="true"] {
       background: var(--tabActive);
       color: var(--tabActiveText);
       font-weight: 600;
-      box-shadow: 0 2px 8px rgba(0,0,0,0.1);
     }
 
-    .tab-btn[aria-selected="true"]:hover{
-      transform: none;
+    /* --- CONTENT PANELS --- */
+    .panel {
+      display: none;
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: var(--pad);
+      background: var(--panel-bg);
+      box-shadow: var(--shadow);
     }
 
-    @media (max-width: 768px){
-      .tab-btn{
-        flex: 1 1 calc(50% - 4px);
-        min-width: 0;
-        padding: 9px 16px;
-        font-size: 13px;
-      }
-    }
+    .panel[data-active="true"] { display: block; }
+    .panel h2 { margin: 0 0 10px; font-size: 18px; }
+    .panel p { margin: 0 0 16px; color: var(--muted); font-size: 14px; }
 
-    @media (max-width: 480px){
-      .tab-btn{
-        flex: 1 1 100%;
-      }
-    }
-
-    /* Panels */
-    .panel{
-      display:none;
-      border:1px solid var(--border);
-      border-radius:var(--radius);
-      padding:var(--pad);
-      background:var(--card);
-      box-shadow:var(--shadow);
-    }
-
-    .panel[data-active="true"]{
-      display:block;
-    }
-
-    .panel h2{
-      margin:0 0 10px;
-      font-size:18px;
-    }
-
-    .panel p{
-      margin:0 0 16px;
-      color:var(--muted);
-      font-size:14px;
-    }
-
-    /* Cards grid */
-    .grid{
-      display:grid;
+    /* --- GRID & CARDS --- */
+    .grid {
+      display: grid;
       grid-template-columns: repeat(3, minmax(0, 1fr));
-      gap:12px;
+      gap: 12px;
     }
 
-    @media (max-width: 980px){
-      .grid{ grid-template-columns: repeat(2, minmax(0, 1fr)); }
-    }
-    @media (max-width: 620px){
-      .grid{ grid-template-columns: 1fr; }
-    }
-
-    .card{
-      border:1px solid var(--border);
-      border-radius:var(--radius);
-      padding:14px;
-      background:var(--card);
-      box-shadow:var(--shadow);
-      display:flex;
-      flex-direction:column;
-      gap:10px;
-      min-height:132px;
+    .card {
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 14px;
+      background: var(--card-bg-dev);
+      box-shadow: var(--shadow);
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      min-height: 132px;
+      transition: background 0.3s ease;
     }
 
-    .card .title{
-      font-weight:650;
-      font-size:14px;
-      margin:0;
+    /* Active Card State: Background becomes white */
+    .card[data-active="true"] {
+      background: var(--card-bg-active);
     }
 
-    .card .desc{
-      margin:0;
-      color:var(--muted);
-      font-size:13px;
-      display:-webkit-box;
+    .card .title { font-weight: 650; font-size: 14px; margin: 0; }
+    .card .desc {
+      margin: 0;
+      color: var(--muted);
+      font-size: 13px;
+      display: -webkit-box;
       -webkit-line-clamp: 3;
       -webkit-box-orient: vertical;
-      overflow:hidden;
+      overflow: hidden;
       min-height: 3.9em;
     }
 
-    .card .actions{
-      margin-top:auto;
-      display:flex;
-      gap:10px;
-      flex-wrap:wrap;
+    .card .actions { margin-top: auto; display: flex; gap: 10px; }
+
+    /* --- ACTION BUTTONS --- */
+    .btn {
+      display: inline-block;
+      text-decoration: none;
+      border: 1px solid var(--border);
+      padding: 8px 10px;
+      border-radius: 12px;
+      font-size: 13px;
+      color: var(--text);
+      background: #ffffff;
+      transition: background 0.2s, transform 0.1s, opacity 0.2s;
+      cursor: pointer;
+      
+      /* Default button state for inactive cards */
+      pointer-events: none;
+      opacity: 0.4;
+      filter: grayscale(1);
     }
 
-    .btn{
-      display:inline-block;
-      text-decoration:none;
-      border:1px solid var(--border);
-      padding:8px 10px;
-      border-radius:12px;
-      font-size:13px;
-      color:var(--text);
-      background:#f9fafb;
+    /* Button becomes active when its parent card is set to data-active="true" */
+    .card[data-active="true"] .btn {
+      pointer-events: auto;
+      opacity: 1;
+      filter: none;
     }
 
-    .btn:hover{
-      background:#f3f4f6;
-    }
+    .btn:hover { background: #f9fafb; border-color: var(--muted); }
+    .btn:active { transform: scale(0.98); }
 
-    .btn:focus{
-      outline:none;
-      box-shadow:var(--focus);
-    }
-
-    .hint{
-      margin-top:14px;
-      font-size:13px;
-      color:var(--muted);
-    }
-
-    .hidden{ display:none !important; }
+    @media (max-width: 980px){ .grid { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+    @media (max-width: 620px){ .grid { grid-template-columns: 1fr; } }
+    @media (max-width: 768px){ .tab-btn { flex: 1 1 calc(50% - 4px); min-width: 0; font-size: 13px; } }
   </style>
 </head>
 <body>
   <div class="wrap">
     <header>
       <h1>Piping & Equipment Library</h1>
-      <p class="sub">A curated collection of technical reference materials and tools to support your work in ship systems design, mechanical analysis, and reporting.
-Use the tabs below to navigate to different sections.  Enjoy!</p>
+      <p class="sub">Curated technical reference materials. <strong>Red cards indicate content under development.</strong></p>
     </header>
 
     <div class="toolbar">
-      <nav class="tabs" role="tablist" aria-label="Library sections">
+      <nav class="tabs" role="tablist">
         <button class="tab-btn" role="tab" aria-selected="true" aria-controls="tab-equipment" id="btn-equipment">VFI & CAD Blocks</button>
         <button class="tab-btn" role="tab" aria-selected="false" aria-controls="tab-piping" id="btn-piping">Piping</button>
         <button class="tab-btn" role="tab" aria-selected="false" aria-controls="tab-outfitting" id="btn-outfitting">Outfitting</button>
         <button class="tab-btn" role="tab" aria-selected="false" aria-controls="tab-structural" id="btn-structural">Structural</button>
-         <button class="tab-btn" role="tab" aria-selected="false" aria-controls="tab-templates" id="btn-templates">Templates & Symbols</button>
-        <button class="tab-btn" role="tab" aria-selected="false" aria-controls="tab-spreadsheets" id="btn-spreadsheets">Spreadsheets & Calculators</button>
-       <button class="tab-btn" role="tab" aria-selected="false" aria-controls="tab-regulations" id="btn-regulations">Regulations</button>
+        <button class="tab-btn" role="tab" aria-selected="false" aria-controls="tab-templates" id="btn-templates">Templates & Symbols</button>
+        <button class="tab-btn" role="tab" aria-selected="false" aria-controls="tab-spreadsheets" id="btn-spreadsheets">Calculators</button>
+        <button class="tab-btn" role="tab" aria-selected="false" aria-controls="tab-regulations" id="btn-regulations">Regulations</button>
       </nav>
     </div>
 
-    <!-- PIPING -->
-    <section class="panel" role="tabpanel" id="tab-piping" aria-labelledby="btn-piping" data-active="false">
-      <h2>Piping</h2>
-      <p>Core piping components.</p>
-
-      <div class="grid">
-        
-        <div class="card" data-tags="expansion joints bellows flex hose vibration">
-          <p class="title">Expansion & Flex</p>
-          <p class="desc">Expansion joints, bellows, flexible connectors, and hose assemblies.</p>
-          <div class="actions">
-            <a class="btn" href="PLACEHOLDER.html">Open</a>
-          </div>
-        </div>
-
-        <div class="card" data-tags="fittings elbows tees reducers caps plugs unions">
-          <p class="title">Fittings</p>
-          <p class="desc">Elbows, tees, reducers, caps, plugs, unions, and related fittings.</p>
-          <div class="actions">
-            <a class="btn" href="PLACEHOLDER.html">Open</a>
-          </div>
-        </div>
-
-        <div class="card" data-tags="flanges gaskets bolting asme ansi din jis">
-          <p class="title">Flanges</p>
-          <p class="desc">Flange types organized by standard.</p>
-          <div class="actions">
-            <a class="btn" href="PLACEHOLDER.html">Open</a>
-          </div>
-        </div>
-
-        <div class="card" data-tags="instrumentation pressure flow temperature gauge meter transmitter sensor">
-          <p class="title">Instrumentation</p>
-          <p class="desc">Gauges, meters, transmitters, sensors, and control accessories for pressure, flow, and temperature.</p>
-          <div class="actions">
-            <a class="btn" href="PLACEHOLDER.html">Open</a>
-          </div>
-        </div>
-
-        <div class="card" data-tags="penetration standards bulkhead deck watertight fire">
-          <p class="title">Penetration Standards</p>
-          <p class="desc">Bulkhead and deck penetration details, watertight and fire-rated requirements.</p>
-          <div class="actions">
-            <a class="btn" href="PLACEHOLDER.html">Open</a>
-          </div>
-        </div>
-
-        <div class="card" data-tags="property tables fluid properties thermal steam water">
-          <p class="title">Property Tables</p>
-          <p class="desc">Fluid properties, thermal data, steam tables, and physical property references.</p>
-          <div class="actions">
-            <a class="btn" href="PLACEHOLDER.html">Open</a>
-          </div>
-        </div>
-
-        <div class="card" data-tags="supports hangers clamps u-bolts guides anchors shoes">
-          <p class="title">Supports & Hangers</p>
-          <p class="desc">Common pipe support hardware, guides, anchors, and shoes.</p>
-          <div class="actions">
-            <a class="btn" href="PLACEHOLDER.html">Open</a>
-          </div>
-        </div>
-
-        <div class="card" data-tags="valves gate globe ball butterfly check relief quick closing sea">
-          <p class="title">Valves</p>
-          <p class="desc">Gate, globe, ball, butterfly, check, relief, quick closing, sea valves, and specialty types.</p>
-          <div class="actions">
-            <a class="btn" href="PLACEHOLDER.html">Open</a>
-          </div>
-        </div>
-      </div>
-
-      
-    </section>
-
-    <!-- VFI & CAD Blocks -->
-    <section class="panel" role="tabpanel" id="tab-equipment" aria-labelledby="btn-equipment" data-active="true">
+    <!-- VFI & CAD BLOCKS -->
+    <section class="panel" role="tabpanel" id="tab-equipment" data-active="true">
       <h2>VFI & CAD Blocks</h2>
       <p>Active machinery and packaged items that connect into piping systems.</p>
-
       <div class="grid">
-        <div class="card" data-tags="ballast water treatment system bwts tanks">
-          <p class="title">Ballast Systems</p>
-          <p class="desc">Ballast water systems, treatment equipment, tanks, and pumping arrangements.</p>
-          <div class="actions">
-            <a class="btn" href="PLACEHOLDER.html">Open</a>
-          </div>
-        </div>
-
-        <div class="card" data-tags="cad block links resources library download">
-          <p class="title">CAD Block Links</p>
-          <p class="desc">External resources and links to CAD block libraries and downloadable content.</p>
-          <div class="actions">
-            <a class="btn" href="PLACEHOLDER.html">Open</a>
-          </div>
-        </div>
-
-        <div class="card" data-tags="compressed air compressor pneumatic">
-          <p class="title">Compressed Air</p>
-          <p class="desc">Air compressors, receivers, dryers, and pneumatic system components.</p>
-          <div class="actions">
-            <a class="btn" href="PLACEHOLDER.html">Open</a>
-          </div>
-        </div>
-
-        <div class="card" data-tags="electrical switchboard motor control panel mcc">
-          <p class="title">Electrical</p>
-          <p class="desc">Switchboards, motor control centers, panels, and electrical distribution equipment.</p>
-          <div class="actions">
-            <a class="btn" href="PLACEHOLDER.html">Open</a>
-          </div>
-        </div>
-
-        <div class="card" data-tags="engines gensets generator diesel propulsion">
-          <p class="title">Engines and Gensets</p>
-          <p class="desc">Diesel engines, generators, prime movers, and propulsion machinery.</p>
-          <div class="actions">
-            <a class="btn" href="PLACEHOLDER.html">Open</a>
-          </div>
-        </div>
-
-        <div class="card" data-tags="exhaust funnel stack silencer muffler">
-          <p class="title">Exhaust</p>
-          <p class="desc">Exhaust systems, stacks, silencers, mufflers, and emission control equipment.</p>
-          <div class="actions">
-            <a class="btn" href="PLACEHOLDER.html">Open</a>
-          </div>
-        </div>
-
-        <div class="card" data-tags="firefighting fire pump sprinkler foam deluge">
-          <p class="title">Firefighting</p>
-          <p class="desc">Fire pumps, sprinkler systems, foam equipment, and fire suppression systems.</p>
-          <div class="actions">
-            <a class="btn" href="PLACEHOLDER.html">Open</a>
-          </div>
-        </div>
-
-        <div class="card" data-tags="gearbox transmission reduction gear marine">
-          <p class="title">Gearboxes</p>
-          <p class="desc">Reduction gears, transmissions, and marine gearbox assemblies.</p>
-          <div class="actions">
-            <a class="btn" href="PLACEHOLDER.html">Open</a>
-          </div>
-        </div>
-
-        <div class="card" data-tags="heat exchanger cooler heater plate shell tube">
-          <p class="title">Heat Exchangers</p>
-          <p class="desc">Shell-and-tube, plate, coolers, heaters, and common skid arrangements.</p>
-          <div class="actions">
-            <a class="btn" href="PLACEHOLDER.html">Open</a>
-          </div>
-        </div>
-
-        <div class="card" data-tags="hvac heating ventilation air conditioning chiller ahu">
-          <p class="title">HVAC</p>
-          <p class="desc">Heating, ventilation, air conditioning units, chillers, and air handling equipment.</p>
-          <div class="actions">
-            <a class="btn" href="PLACEHOLDER.html">Open</a>
-          </div>
-        </div>
-
-        <div class="card" data-tags="potable water fresh drinking treatment purification">
-          <p class="title">Potable Water</p>
-          <p class="desc">Potable water systems, treatment equipment, and purification units.</p>
-          <div class="actions">
-            <a class="btn" href="PLACEHOLDER.html">Open</a>
-          </div>
-        </div>
-
-        <div class="card" data-tags="propellers shaft thruster azimuth propulsion">
-          <p class="title">Propellers</p>
-          <p class="desc">Propellers, shafts, thrusters, azimuth drives, and propulsion components.</p>
-          <div class="actions">
-            <a class="btn" href="PLACEHOLDER.html">Open</a>
-          </div>
-        </div>
-
-        <div class="card" data-tags="pumps centrifugal gear screw diaphragm pd submersible">
-          <p class="title">Pumps</p>
-          <p class="desc">Centrifugal and positive displacement pump blocks, typical sets, and arrangements.</p>
-          <div class="actions">
-            <a class="btn" href="PLACEHOLDER.html">Open</a>
-          </div>
-        </div>
-
-        <div class="card" data-tags="separator oil water bilge purifier clarifier">
-          <p class="title">Separators</p>
-          <p class="desc">Oil-water separators, bilge separators, purifiers, and clarifiers.</p>
-          <div class="actions">
-            <a class="btn" href="PLACEHOLDER.html">Open</a>
-          </div>
-        </div>
-
-        <div class="card" data-tags="sewage treatment blackwater wastewater msd">
-          <p class="title">Sewage</p>
-          <p class="desc">Sewage treatment plants, blackwater systems, and marine sanitation devices.</p>
-          <div class="actions">
-            <a class="btn" href="PLACEHOLDER.html">Open</a>
-          </div>
-        </div>
-
-        <div class="card" data-tags="steering gear hydraulic rudder helm autopilot">
-          <p class="title">Steering</p>
-          <p class="desc">Steering gear, hydraulic systems, rudder actuators, and autopilot equipment.</p>
-          <div class="actions">
-            <a class="btn" href="PLACEHOLDER.html">Open</a>
-          </div>
-        </div>
-
-        <div class="card" data-tags="tanks vessels pressure vessel reservoir day tank">
-          <p class="title">Tanks & Vessels</p>
-          <p class="desc">Expansion tanks, pressure vessels, reservoirs, and related equipment.</p>
-          <div class="actions">
-            <a class="btn" href="PLACEHOLDER.html">Open</a>
-          </div>
-        </div>
-
-        <div class="card" data-tags="vfi vendor furnished information specifications datasheets">
-          <p class="title">Vendor Furnished Information (VFI) Links</p>
-          <p class="desc">Links to vendor documentation, specifications, and technical data sheets.</p>
-          <div class="actions">
-            <a class="btn" href="PLACEHOLDER.html">Open</a>
-          </div>
-        </div>
+        <!-- Toggling data-active="true" on a card now enables the button and turns the card white -->
+        <div class="card" data-active="false"><p class="title">Ballast Systems</p><p class="desc">Ballast water systems, treatment equipment, tanks, and pumping arrangements.</p><div class="actions"><a class="btn" href="PLACEHOLDER.html">Open</a></div></div>
+        <div class="card" data-active="true"><p class="title">CAD Block Links</p><p class="desc">External resources and links to CAD block libraries.</p><div class="actions"><a class="btn" href="VFI-CAD_BLOCKS_Links.html">Open</a></div></div>
+        <div class="card" data-active="false"><p class="title">Compressed Air</p><p class="desc">Air compressors, receivers, dryers, and pneumatic components.</p><div class="actions"><a class="btn" href="PLACEHOLDER.html">Open</a></div></div>
+        <div class="card" data-active="false"><p class="title">Electrical</p><p class="desc">Switchboards, motor control centers, and distribution equipment.</p><div class="actions"><a class="btn" href="PLACEHOLDER.html">Open</a></div></div>
+        <div class="card" data-active="false"><p class="title">Engines and Gensets</p><p class="desc">Diesel engines, generators, and propulsion machinery.</p><div class="actions"><a class="btn" href="PLACEHOLDER.html">Open</a></div></div>
+        <div class="card" data-active="false"><p class="title">Exhaust</p><p class="desc">Exhaust systems, stacks, silencers, and mufflers.</p><div class="actions"><a class="btn" href="PLACEHOLDER.html">Open</a></div></div>
+        <div class="card" data-active="false"><p class="title">Firefighting</p><p class="desc">Fire pumps, sprinklers, and suppression systems.</p><div class="actions"><a class="btn" href="PLACEHOLDER.html">Open</a></div></div>
+        <div class="card" data-active="false"><p class="title">Gearboxes</p><p class="desc">Reduction gears and marine transmissions.</p><div class="actions"><a class="btn" href="PLACEHOLDER.html">Open</a></div></div>
+        <div class="card" data-active="false"><p class="title">Heat Exchangers</p><p class="desc">Shell-and-tube, plate, coolers, and heaters.</p><div class="actions"><a class="btn" href="PLACEHOLDER.html">Open</a></div></div>
+        <div class="card" data-active="false"><p class="title">HVAC</p><p class="desc">Heating, ventilation, and air conditioning units.</p><div class="actions"><a class="btn" href="PLACEHOLDER.html">Open</a></div></div>
+        <div class="card" data-active="false"><p class="title">Potable Water</p><p class="desc">Potable water treatment and purification units.</p><div class="actions"><a class="btn" href="PLACEHOLDER.html">Open</a></div></div>
+        <div class="card" data-active="false"><p class="title">Propellers</p><p class="desc">Propellers, shafts, thrusters, and propulsion components.</p><div class="actions"><a class="btn" href="PLACEHOLDER.html">Open</a></div></div>
+        <div class="card" data-active="false"><p class="title">Pumps</p><p class="desc">Centrifugal and positive displacement pump blocks.</p><div class="actions"><a class="btn" href="PLACEHOLDER.html">Open</a></div></div>
+        <div class="card" data-active="false"><p class="title">Separators</p><p class="desc">Purifiers, clarifiers, and bilge separators.</p><div class="actions"><a class="btn" href="PLACEHOLDER.html">Open</a></div></div>
+        <div class="card" data-active="false"><p class="title">Sewage</p><p class="desc">Treatment plants and marine sanitation devices.</p><div class="actions"><a class="btn" href="PLACEHOLDER.html">Open</a></div></div>
+        <div class="card" data-active="false"><p class="title">Steering</p><p class="desc">Steering gear and hydraulic rudder actuators.</p><div class="actions"><a class="btn" href="PLACEHOLDER.html">Open</a></div></div>
+        <div class="card" data-active="false"><p class="title">Tanks & Vessels</p><p class="desc">Expansion tanks, pressure vessels, and reservoirs.</p><div class="actions"><a class="btn" href="PLACEHOLDER.html">Open</a></div></div>
+        <div class="card" data-active="true"><p class="title">VFI Links</p><p class="desc">Links to vendor documentation and technical sheets.</p><div class="actions"><a class="btn" href="VFI-Links.html">Open</a></div></div>
       </div>
     </section>
 
-    <!-- STRUCTURAL -->
-    <section class="panel" role="tabpanel" id="tab-structural" aria-labelledby="btn-structural" data-active="false">
-      <h2>Structural</h2>
-      <p>Structural components, supports, and related materials.</p>
-
+    <!-- PIPING -->
+    <section class="panel" role="tabpanel" id="tab-piping">
+      <h2>Piping</h2>
+      <p>Core piping components.</p>
       <div class="grid">
-        <div class="card" data-tags="connections joints plates gussets">
-          <p class="title">Connections & Joints</p>
-          <p class="desc">Connection details, joint configurations, and attachment methods.</p>
-          <div class="actions">
-            <a class="btn" href="PLACEHOLDER.html">Open</a>
-          </div>
-        </div>
-
-        <div class="card" data-tags="foundations mounts bases anchors">
-          <p class="title">Foundations & Mounts</p>
-          <p class="desc">Foundation details, equipment mounts, and anchor configurations.</p>
-          <div class="actions">
-            <a class="btn" href="PLACEHOLDER.html">Open</a>
-          </div>
-        </div>
-
-        <div class="card" data-tags="beams columns girders structural steel">
-          <p class="title">Structural Steel</p>
-          <p class="desc">Beams, columns, girders, and common structural steel shapes.</p>
-          <div class="actions">
-            <a class="btn" href="PLACEHOLDER.html">Open</a>
-          </div>
-        </div>
+        <div class="card" data-active="false"><p class="title">Expansion & Flex</p><p class="desc">Expansion joints, bellows, and flex hoses.</p><div class="actions"><a class="btn" href="PLACEHOLDER.html">Open</a></div></div>
+        <div class="card" data-active="false"><p class="title">Fittings</p><p class="desc">Elbows, tees, reducers, and unions.</p><div class="actions"><a class="btn" href="PLACEHOLDER.html">Open</a></div></div>
+        <div class="card" data-active="false"><p class="title">Flanges</p><p class="desc">Flange types organized by standard (ASME, DIN, JIS).</p><div class="actions"><a class="btn" href="PLACEHOLDER.html">Open</a></div></div>
+        <div class="card" data-active="false"><p class="title">Instrumentation</p><p class="desc">Gauges, meters, transmitters, and sensors.</p><div class="actions"><a class="btn" href="PLACEHOLDER.html">Open</a></div></div>
+        <div class="card" data-active="false"><p class="title">Penetration Standards</p><p class="desc">Bulkhead and deck penetration details.</p><div class="actions"><a class="btn" href="PLACEHOLDER.html">Open</a></div></div>
+        <div class="card" data-active="false"><p class="title">Property Tables</p><p class="desc">Fluid properties and thermal data references.</p><div class="actions"><a class="btn" href="PLACEHOLDER.html">Open</a></div></div>
+        <div class="card" data-active="false"><p class="title">Supports & Hangers</p><p class="desc">Common support hardware, guides, and anchors.</p><div class="actions"><a class="btn" href="PLACEHOLDER.html">Open</a></div></div>
+        <div class="card" data-active="false"><p class="title">Valves</p><p class="desc">Gate, globe, ball, butterfly, and check valves.</p><div class="actions"><a class="btn" href="PLACEHOLDER.html">Open</a></div></div>
       </div>
     </section>
 
     <!-- OUTFITTING -->
-    <section class="panel" role="tabpanel" id="tab-outfitting" aria-labelledby="btn-outfitting" data-active="false">
+    <section class="panel" role="tabpanel" id="tab-outfitting">
       <h2>Outfitting</h2>
-      <p>Ship outfitting components, access equipment, and architectural elements.</p>
-
       <div class="grid">
-        <div class="card" data-tags="access covers hatches scuttles">
-          <p class="title">Access Covers</p>
-          <p class="desc">Access covers, hatches, scuttles, and inspection openings.</p>
-          <div class="actions">
-            <a class="btn" href="PLACEHOLDER.html">Open</a>
-          </div>
-        </div>
-
-        <div class="card" data-tags="doors watertight weathertight joiner fire">
-          <p class="title">Doors</p>
-          <p class="desc">Watertight, weathertight, joiner, fire-rated, and specialty doors.</p>
-          <div class="actions">
-            <a class="btn" href="PLACEHOLDER.html">Open</a>
-          </div>
-        </div>
-
-        <div class="card" data-tags="furniture cabinets lockers berths galley">
-          <p class="title">Furniture & Fixtures</p>
-          <p class="desc">Cabinets, lockers, berths, galley equipment, and interior fixtures.</p>
-          <div class="actions">
-            <a class="btn" href="PLACEHOLDER.html">Open</a>
-          </div>
-        </div>
-
-        <div class="card" data-tags="gratings deck floor non-skid">
-          <p class="title">Gratings & Flooring</p>
-          <p class="desc">Deck gratings, floor plates, non-skid surfaces, and walking surfaces.</p>
-          <div class="actions">
-            <a class="btn" href="PLACEHOLDER.html">Open</a>
-          </div>
-        </div>
-
-        <div class="card" data-tags="handrails guardrails safety rails stanchions">
-          <p class="title">Handrails & Guardrails</p>
-          <p class="desc">Safety rails, handrails, guardrails, stanchions, and lifelines.</p>
-          <div class="actions">
-            <a class="btn" href="PLACEHOLDER.html">Open</a>
-          </div>
-        </div>
-
-        <div class="card" data-tags="ladders vertical inclined cage ships">
-          <p class="title">Ladders</p>
-          <p class="desc">Vertical ladders, inclined ladders, cage ladders, and ship's ladders.</p>
-          <div class="actions">
-            <a class="btn" href="PLACEHOLDER.html">Open</a>
-          </div>
-        </div>
-
-        <div class="card" data-tags="lighting fixtures bulkhead overhead emergency">
-          <p class="title">Lighting Fixtures</p>
-          <p class="desc">Bulkhead lights, overhead lighting, emergency fixtures, and marine lighting.</p>
-          <div class="actions">
-            <a class="btn" href="PLACEHOLDER.html">Open</a>
-          </div>
-        </div>
-
-        <div class="card" data-tags="manholes elliptical circular pressure">
-          <p class="title">Manholes</p>
-          <p class="desc">Elliptical manholes, circular manholes, and pressure-rated access openings.</p>
-          <div class="actions">
-            <a class="btn" href="PLACEHOLDER.html">Open</a>
-          </div>
-        </div>
-
-        <div class="card" data-tags="stairs treads risers companionway accommodation">
-          <p class="title">Stairs</p>
-          <p class="desc">Accommodation stairs, companionways, treads, risers, and stair assemblies.</p>
-          <div class="actions">
-            <a class="btn" href="PLACEHOLDER.html">Open</a>
-          </div>
-        </div>
-
-        <div class="card" data-tags="windows portholes deadlights scuttles viewports">
-          <p class="title">Windows & Portholes</p>
-          <p class="desc">Windows, portholes, deadlights, scuttles, and bridge viewports.</p>
-          <div class="actions">
-            <a class="btn" href="PLACEHOLDER.html">Open</a>
-          </div>
-        </div>
+        <div class="card" data-active="false"><p class="title">Access Covers</p><p class="desc">Hatches, scuttles, and inspection openings.</p><div class="actions"><a class="btn" href="PLACEHOLDER.html">Open</a></div></div>
+        <div class="card" data-active="false"><p class="title">Doors</p><p class="desc">Watertight, weathertight, and fire-rated doors.</p><div class="actions"><a class="btn" href="PLACEHOLDER.html">Open</a></div></div>
+        <div class="card" data-active="false"><p class="title">Furniture & Fixtures</p><p class="desc">Cabinets, lockers, and interior fixtures.</p><div class="actions"><a class="btn" href="PLACEHOLDER.html">Open</a></div></div>
+        <div class="card" data-active="false"><p class="title">Gratings & Flooring</p><p class="desc">Deck gratings and walking surfaces.</p><div class="actions"><a class="btn" href="PLACEHOLDER.html">Open</a></div></div>
+        <div class="card" data-active="false"><p class="title">Handrails</p><p class="desc">Safety rails and stanchions.</p><div class="actions"><a class="btn" href="PLACEHOLDER.html">Open</a></div></div>
+        <div class="card" data-active="false"><p class="title">Ladders</p><p class="desc">Vertical, inclined, and cage ladders.</p><div class="actions"><a class="btn" href="PLACEHOLDER.html">Open</a></div></div>
+        <div class="card" data-active="false"><p class="title">Lighting Fixtures</p><p class="desc">Marine and emergency fixtures.</p><div class="actions"><a class="btn" href="PLACEHOLDER.html">Open</a></div></div>
+        <div class="card" data-active="false"><p class="title">Manholes</p><p class="desc">Elliptical and circular openings.</p><div class="actions"><a class="btn" href="PLACEHOLDER.html">Open</a></div></div>
+        <div class="card" data-active="false"><p class="title">Stairs</p><p class="desc">Accommodation and companionway stairs.</p><div class="actions"><a class="btn" href="PLACEHOLDER.html">Open</a></div></div>
+        <div class="card" data-active="false"><p class="title">Windows</p><p class="desc">Portholes and bridge viewports.</p><div class="actions"><a class="btn" href="PLACEHOLDER.html">Open</a></div></div>
       </div>
     </section>
 
-    <!-- SPREADSHEETS -->
-    <section class="panel" role="tabpanel" id="tab-spreadsheets" aria-labelledby="btn-spreadsheets" data-active="false">
-      <h2>Spreadsheets & Calculators</h2>
-      <p>Engineering calculation tools and spreadsheet templates.</p>
-
+    <!-- STRUCTURAL -->
+    <section class="panel" role="tabpanel" id="tab-structural">
+      <h2>Structural</h2>
       <div class="grid">
-        <div class="card" data-tags="heat transfer exchanger thermal sizing">
-          <p class="title">Heat Transfer</p>
-          <p class="desc">Heat exchanger sizing, thermal calculations, and performance tools.</p>
-          <div class="actions">
-            <a class="btn" href="PLACEHOLDER.html">Open</a>
-          </div>
-        </div>
-
-        <div class="card" data-tags="piping calculations pressure drop flow velocity">
-          <p class="title">Piping Calculations</p>
-          <p class="desc">Flow calculations, pressure drop, velocity, and sizing tools.</p>
-          <div class="actions">
-            <a class="btn" href="PLACEHOLDER.html">Open</a>
-          </div>
-        </div>
-
-        <div class="card" data-tags="pump sizing selection head npsh">
-          <p class="title">Pump Selection</p>
-          <p class="desc">Pump sizing, head calculations, NPSH, and selection tools.</p>
-          <div class="actions">
-            <a class="btn" href="PLACEHOLDER.html">Open</a>
-          </div>
-        </div>
-
-        <div class="card" data-tags="structural loads stress analysis">
-          <p class="title">Structural Analysis</p>
-          <p class="desc">Load calculations, stress analysis, and structural design tools.</p>
-          <div class="actions">
-            <a class="btn" href="PLACEHOLDER.html">Open</a>
-          </div>
-        </div>
+        <div class="card" data-active="false"><p class="title">Connections</p><p class="desc">Joint details and attachment methods.</p><div class="actions"><a class="btn" href="PLACEHOLDER.html">Open</a></div></div>
+        <div class="card" data-active="false"><p class="title">Foundations</p><p class="desc">Equipment mounts and anchor bases.</p><div class="actions"><a class="btn" href="PLACEHOLDER.html" data-enabled="false">Open</a></div></div>
+        <div class="card" data-active="false"><p class="title">Structural Steel</p><p class="desc">Standard beams, columns, and shapes.</p><div class="actions"><a class="btn" href="PLACEHOLDER.html" data-enabled="false">Open</a></div></div>
       </div>
     </section>
 
     <!-- TEMPLATES -->
-    <section class="panel" role="tabpanel" id="tab-templates" aria-labelledby="btn-templates" data-active="false">
+    <section class="panel" role="tabpanel" id="tab-templates">
       <h2>Templates & Symbols</h2>
-      <p>Drawing aids, common symbols, title blocks, and reference layouts.</p>
-
       <div class="grid">
-        <div class="card" data-tags="bom bill of materials parts list template">
-          <p class="title">Bill of Materials Templates</p>
-          <p class="desc">Standardized BOM templates, parts lists, and material tracking forms.</p>
-          <div class="actions">
-            <a class="btn" href="PLACEHOLDER.html">Open</a>
-          </div>
-        </div>
+        <div class="card" data-active="false"><p class="title">BOM Templates</p><p class="desc">Standardized Bill of Material forms.</p><div class="actions"><a class="btn" href="PLACEHOLDER.html">Open</a></div></div>
+        <div class="card" data-active="false"><p class="title">CAD Templates</p><p class="desc">Title blocks and linetype setups.</p><div class="actions"><a class="btn" href="PLACEHOLDER.html">Open</a></div></div>
+        <div class="card" data-active="false"><p class="title">Design Standards</p><p class="desc">Industry code and spec references.</p><div class="actions"><a class="btn" href="PLACEHOLDER.html">Open</a></div></div>
+        <div class="card" data-active="false"><p class="title">Electrical Symbols</p><p class="desc">Schematic symbols for power and control.</p><div class="actions"><a class="btn" href="PLACEHOLDER.html">Open</a></div></div>
+        <div class="card" data-active="false"><p class="title">HVAC Symbols</p><p class="desc">Ductwork and air handling symbols.</p><div class="actions"><a class="btn" href="PLACEHOLDER.html">Open</a></div></div>
+        <div class="card" data-active="false"><p class="title">P&ID Symbols</p><p class="desc">Schematic and legend symbols.</p><div class="actions"><a class="btn" href="PLACEHOLDER.html">Open</a></div></div>
+        <div class="card" data-active="false"><p class="title">Welding Symbols</p><p class="desc">AWS standard weld representations.</p><div class="actions"><a class="btn" href="PLACEHOLDER.html">Open</a></div></div>
+      </div>
+    </section>
 
-        <div class="card" data-tags="templates title block layers linetypes">
-          <p class="title">CAD Templates</p>
-          <p class="desc">Title blocks, layers, linetypes, and plotting setups.</p>
-          <div class="actions">
-            <a class="btn" href="PLACEHOLDER.html">Open</a>
-          </div>
-        </div>
-
-        <div class="card" data-tags="standards specifications requirements codes asme ansi iso">
-          <p class="title">Design Standards</p>
-          <p class="desc">Industry standards, specifications, and design code references.</p>
-          <div class="actions">
-            <a class="btn" href="PLACEHOLDER.html">Open</a>
-          </div>
-        </div>
-
-        <div class="card" data-tags="tools software links resources applications">
-          <p class="title">Design Tool Links</p>
-          <p class="desc">Links to design software, online tools, and engineering resources.</p>
-          <div class="actions">
-            <a class="btn" href="PLACEHOLDER.html">Open</a>
-          </div>
-        </div>
-
-        <div class="card" data-tags="electrical symbols motor panel switch transformer">
-          <p class="title">Electrical Symbols</p>
-          <p class="desc">Electrical schematic symbols, motor controls, panels, and power distribution.</p>
-          <div class="actions">
-            <a class="btn" href="PLACEHOLDER.html">Open</a>
-          </div>
-        </div>
-
-        <div class="card" data-tags="hvac symbols duct diffuser damper fan coil">
-          <p class="title">HVAC Symbols</p>
-          <p class="desc">HVAC schematic symbols, ductwork, diffusers, dampers, and air handling equipment.</p>
-          <div class="actions">
-            <a class="btn" href="PLACEHOLDER.html">Open</a>
-          </div>
-        </div>
-
-        <div class="card" data-tags="symbols p&id pid isometric schematic legend">
-          <p class="title">P&amp;ID Symbols</p>
-          <p class="desc">Symbols and legends used for schematic drawings.</p>
-          <div class="actions">
-            <a class="btn" href="PLACEHOLDER.html">Open</a>
-          </div>
-        </div>
-
-        <div class="card" data-tags="assemblies skids typical install">
-          <p class="title">System Assemblies</p>
-          <p class="desc">Typical arrangements and standard assemblies used in layouts.</p>
-          <div class="actions">
-            <a class="btn" href="PLACEHOLDER.html">Open</a>
-          </div>
-        </div>
-
-        <div class="card" data-tags="report template documentation technical writing">
-          <p class="title">Technical Report Template</p>
-          <p class="desc">Standardized templates for technical reports, documentation, and analysis.</p>
-          <div class="actions">
-            <a class="btn" href="PLACEHOLDER.html">Open</a>
-          </div>
-        </div>
-
-        <div class="card" data-tags="welding symbols aws fillet groove weld">
-          <p class="title">Welding Symbols</p>
-          <p class="desc">AWS welding symbols, joint types, and weld representation standards.</p>
-          <div class="actions">
-            <a class="btn" href="PLACEHOLDER.html">Open</a>
-          </div>
-        </div>
+    <!-- SPREADSHEETS -->
+    <section class="panel" role="tabpanel" id="tab-spreadsheets">
+      <h2>Calculators</h2>
+      <div class="grid">
+        <div class="card" data-active="false"><p class="title">Heat Transfer</p><p class="desc">Thermal sizing and performance tools.</p><div class="actions"><a class="btn" href="PLACEHOLDER.html">Open</a></div></div>
+        <div class="card" data-active="false"><p class="title">Piping Calc</p><p class="desc">Pressure drop and flow sizing.</p><div class="actions"><a class="btn" href="PLACEHOLDER.html">Open</a></div></div>
+        <div class="card" data-active="false"><p class="title">Pump Selection</p><p class="desc">Head and NPSH calculation tools.</p><div class="actions"><a class="btn" href="PLACEHOLDER.html">Open</a></div></div>
       </div>
     </section>
 
     <!-- REGULATIONS -->
-    <section class="panel" role="tabpanel" id="tab-regulations" aria-labelledby="btn-regulations" data-active="false">
+    <section class="panel" role="tabpanel" id="tab-regulations">
       <h2>Regulations</h2>
-      <p>Regulatory requirements, compliance documentation, and governing standards.</p>
-
       <div class="grid">
-        <div class="card" data-tags="classification society abs dnv lloyd's register rules">
-          <p class="title">Classification Society Rules</p>
-          <p class="desc">ABS, DNV, Lloyd's Register, and other classification society requirements.</p>
-          <div class="actions">
-            <a class="btn" href="PLACEHOLDER.html">Open</a>
-          </div>
-        </div>
-
-        <div class="card" data-tags="environmental epa emissions pollution regulations">
-          <p class="title">Environmental Regulations</p>
-          <p class="desc">EPA standards, emissions requirements, and environmental compliance documents.</p>
-          <div class="actions">
-            <a class="btn" href="PLACEHOLDER.html">Open</a>
-          </div>
-        </div>
-
-        <div class="card" data-tags="maritime solas imo marpol regulations">
-          <p class="title">Maritime Regulations</p>
-          <p class="desc">SOLAS, IMO, MARPOL, and other international maritime regulatory requirements.</p>
-          <div class="actions">
-            <a class="btn" href="PLACEHOLDER.html">Open</a>
-          </div>
-        </div>
-
-        <div class="card" data-tags="safety osha compliance standards requirements">
-          <p class="title">Safety Standards</p>
-          <p class="desc">OSHA requirements, safety protocols, and workplace safety standards.</p>
-          <div class="actions">
-            <a class="btn" href="PLACEHOLDER.html">Open</a>
-          </div>
-        </div>
+        <div class="card" data-active="false"><p class="title">Class Rules</p><p class="desc">ABS, DNV, and LR requirements.</p><div class="actions"><a class="btn" href="PLACEHOLDER.html">Open</a></div></div>
+        <div class="card" data-active="false"><p class="title">Environmental</p><p class="desc">EPA and emission compliance.</p><div class="actions"><a class="btn" href="PLACEHOLDER.html">Open</a></div></div>
+        <div class="card" data-active="false"><p class="title">Maritime</p><p class="desc">IMO, SOLAS, and MARPOL regs.</p><div class="actions"><a class="btn" href="PLACEHOLDER.html">Open</a></div></div>
+        <div class="card" data-active="false"><p class="title">Safety</p><p class="desc">OSHA and workplace protocols.</p><div class="actions"><a class="btn" href="PLACEHOLDER.html">Open</a></div></div>
       </div>
     </section>
+
   </div>
 
   <script>
@@ -783,12 +329,10 @@ Use the tabs below to navigate to different sections.  Enjoy!</p>
         if(target) target.dataset.active = "true";
       }
 
-      // Mouse click
       tabButtons.forEach(btn => {
         btn.addEventListener('click', () => setActiveTab(btn));
       });
 
-      // Keyboard navigation (Left/Right)
       tabButtons.forEach((btn, idx) => {
         btn.addEventListener('keydown', (e) => {
           if(e.key !== 'ArrowLeft' && e.key !== 'ArrowRight') return;
