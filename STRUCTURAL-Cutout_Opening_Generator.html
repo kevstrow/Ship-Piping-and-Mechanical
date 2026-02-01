@@ -1,0 +1,728 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Opening Generator (Rounded Rectangle & Oval)</title>
+  <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
+  <style>
+    body { margin: 0; overflow: hidden; background-color: #f3f4f6; }
+    #canvas-container { width: 100%; height: 100vh; display: block; }
+    .overlay { position: absolute; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; }
+    .panel { pointer-events: auto; }
+    ::-webkit-scrollbar { width: 8px; height: 8px; }
+    ::-webkit-scrollbar-track { background: #f1f1f1; }
+    ::-webkit-scrollbar-thumb { background: #888; border-radius: 4px; }
+    ::-webkit-scrollbar-thumb:hover { background: #555; }
+
+    /* Custom radio styling */
+    .type-radio:checked + div {
+      background-color: #eff6ff; /* blue-50 */
+      border-color: #60a5fa;     /* blue-400 */
+    }
+  </style>
+
+  <script type="importmap">
+    {
+      "imports": {
+        "three": "https://unpkg.com/three@0.160.0/build/three.module.js",
+        "three/addons/": "https://unpkg.com/three@0.160.0/examples/jsm/"
+      }
+    }
+  </script>
+</head>
+
+<body class="text-gray-800 font-sans">
+  <div id="canvas-container"></div>
+
+  <div class="overlay flex flex-col md:flex-row justify-between p-4 md:p-6 gap-4">
+    <!-- LEFT PANEL -->
+    <div class="panel bg-white/90 backdrop-blur shadow-lg rounded-xl p-6 w-full md:w-96 flex flex-col gap-4 border border-gray-200 h-fit max-h-[90vh] overflow-y-auto">
+      <h1 class="text-2xl font-bold text-slate-700">Cutout Opening Generator</h1>
+      <p class="text-sm text-gray-500">Rounded rectangle &amp; oval openings • 2D DXF closed polyline</p>
+
+      <!-- Type Grid -->
+      <div>
+        <label class="block text-sm font-medium text-gray-700 mb-2">Select Opening Type</label>
+        <div class="grid grid-cols-2 gap-2">
+          <label class="cursor-pointer">
+            <input type="radio" name="open-type" value="rrect" class="type-radio hidden" checked>
+            <div class="border border-gray-200 rounded-lg p-2 text-center hover:bg-gray-50 transition text-sm font-medium">
+              Rounded Rectangle (Doors, Hatches)
+            </div>
+          </label>
+          <label class="cursor-pointer">
+            <input type="radio" name="open-type" value="oval" class="type-radio hidden">
+            <div class="border border-gray-200 rounded-lg p-2 text-center hover:bg-gray-50 transition text-sm font-medium">
+              Oval (Manholes, Lightening Holes)
+            </div>
+          </label>
+        </div>
+      </div>
+
+      <!-- Size Selection -->
+      <div>
+        <label class="block text-sm font-medium text-gray-700 mb-1">Size</label>
+        <select id="size-select" class="w-full border border-gray-300 rounded-md p-2 focus:ring-2 focus:ring-blue-500 outline-none bg-white mb-2"></select>
+
+        <!-- Custom Dimensions -->
+        <div id="custom-container" class="hidden mt-3 bg-blue-50/60 border border-blue-200 rounded-lg p-3">
+          <div class="flex items-center justify-between mb-2">
+            <span class="text-sm font-semibold text-slate-700">Custom Dimensions (mm)</span>
+            <button id="apply-custom-btn" class="text-xs bg-blue-600 hover:bg-blue-700 text-white font-bold px-3 py-1 rounded-md shadow-sm">
+              Apply
+            </button>
+          </div>
+          <div id="custom-fields" class="grid grid-cols-2 gap-2"></div>
+          <p class="text-xs text-slate-600 mt-2 leading-snug">
+            Notes: DXF exports a single closed polyline. Rounded corners and oval ends are approximated with short segments for compatibility.
+          </p>
+        </div>
+      </div>
+
+      <!-- Dimensions Table -->
+      <div class="bg-gray-50 rounded-lg p-3 border border-gray-200 text-sm">
+        <h3 class="font-semibold text-gray-700 border-b border-gray-200 pb-2 mb-2">Current Dimensions (mm)</h3>
+        <div class="grid grid-cols-2 gap-y-2 gap-x-4">
+          <span class="text-gray-500" id="lbl-w">Width:</span>
+          <span id="spec-w" class="font-medium text-right">-</span>
+
+          <span class="text-gray-500" id="lbl-h">Height:</span>
+          <span id="spec-h" class="font-medium text-right">-</span>
+
+          <span class="text-gray-500" id="lbl-r">Radius:</span>
+          <span id="spec-r" class="font-medium text-right">-</span>
+        </div>
+      </div>
+
+      <!-- Actions -->
+      <div class="pt-2 flex flex-col gap-2">
+        <button id="download-stl-btn" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 px-4 rounded-lg transition shadow-md flex justify-center items-center gap-2 cursor-pointer">
+          <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+          </svg>
+          Download STL
+        </button>
+
+        <button id="download-dxf-btn" class="w-full bg-green-600 hover:bg-green-700 text-white font-bold py-3 px-4 rounded-lg transition shadow-md flex justify-center items-center gap-2 cursor-pointer">
+          <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+          </svg>
+          Download DXF
+        </button>
+
+        <!-- Instruction box -->
+        <div style="margin-top:4px; padding:10px 14px; border:1px solid #e0d18a; border-radius:10px; background:#fff7cc; font-size:14px; line-height:1.4;">
+          <strong>How to create a 3D opening in AutoCAD (EXTRUDE)</strong>
+          <ol style="margin:6px 0 0 18px;">
+            <li>Open the DXF in AutoCAD.</li>
+            <li>Select the opening polyline (it is already <em>closed</em>).</li>
+            <li>Run <code>EXTRUDE</code> → enter the plate thickness (e.g., <code>10</code>).</li>
+            <li>Use <code>SUBTRACT</code> if you need to cut it out of a plate solid.</li>
+          </ol>
+        </div>
+      </div>
+    </div>
+
+    <!-- RIGHT MINI PANEL -->
+    <div class="panel bg-white/80 backdrop-blur shadow-md rounded-lg p-3 h-fit self-end hidden md:block">
+      <p class="text-xs text-gray-500">
+        <strong>Left Click:</strong> Rotate <br>
+        <strong>Right Click:</strong> Pan <br>
+        <strong>Scroll:</strong> Zoom
+      </p>
+    </div>
+  </div>
+
+  <script type="module">
+    import * as THREE from 'three';
+    import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
+    import { STLExporter } from 'three/addons/exporters/STLExporter.js';
+
+    // ============================================================
+    // PRESETS (mm)
+    // ============================================================
+    const DEFAULT_RADIUS = 25;
+
+    const PRESETS = {
+      rrect: [
+  // ─── DOORS ─────────────────────────────────────────────
+  { key: "1800 × 600 (R50) — Internal passage door",          w: 1800, h: 600,  r: 50 },
+  { key: "1900 × 650 (R50) — Standard internal door",         w: 1900, h: 650,  r: 50 },
+  { key: "2000 × 700 (R75) — Accommodation WT door",          w: 2000, h: 700,  r: 75 },
+  { key: "2100 × 750 (R75) — Machinery space WT door",        w: 2100, h: 750,  r: 75 },
+  { key: "2200 × 800 (R100) — Large machinery access door",   w: 2200, h: 800,  r: 100 },
+
+  // ─── HATCHES ───────────────────────────────────────────
+  { key: "800 × 600 (R75) — Small stores hatch",              w: 800,  h: 600,  r: 75 },
+  { key: "1000 × 800 (R100) — Deck stores hatch",             w: 1000, h: 800,  r: 100 },
+  { key: "1200 × 900 (R125) — Machinery access hatch",        w: 1200, h: 900,  r: 125 },
+  { key: "1500 × 1200 (R150) — Large machinery removal hatch",w: 1500, h: 1200, r: 150 },
+  { key: "2000 × 1500 (R200) — Cargo / service hatch",        w: 2000, h: 1500, r: 200 },
+],
+
+     oval: [
+ { key: "450 × 350 — MH Cutout",              w: 450, h: 350 },
+{ key: "600 × 400 —MH Cutout",           w: 600, h: 400 },
+{ key: "800 × 600 —MH Cutout",      w: 800, h: 600 },
+]
+
+    };
+
+    // ============================================================
+    // GEOMETRY HELPERS (2D outline points in XY, mm)
+    // DXF export is a single closed POLYLINE (R12) using segmented arcs.
+    // ============================================================
+
+    function clampNum(v, min, max){
+      const n = Number(v);
+      if (!isFinite(n)) return min;
+      return Math.min(max, Math.max(min, n));
+    }
+
+    function arcPoints(cx, cy, r, a0, a1, steps){
+      // Includes endpoint a1; caller typically drops first point to avoid duplicates
+      const pts = [];
+      for (let i=0; i<=steps; i++){
+        const t = i/steps;
+        const a = a0 + (a1 - a0) * t;
+        pts.push({ x: cx + r*Math.cos(a), y: cy + r*Math.sin(a) });
+      }
+      return pts;
+    }
+
+	    function normalizeOutline(pts){
+	      // Remove consecutive duplicates and also drop a final point if it repeats the first.
+	      if (!pts || pts.length < 2) return pts || [];
+	      const out = [];
+	      const eps = 1e-9;
+	      for (let i=0; i<pts.length; i++){
+	        const p = pts[i];
+	        const q = out[out.length-1];
+	        if (!q || Math.abs(p.x-q.x)>eps || Math.abs(p.y-q.y)>eps) out.push(p);
+	      }
+	      if (out.length >= 2){
+	        const a = out[0];
+	        const b = out[out.length-1];
+	        if (Math.abs(a.x-b.x)<=eps && Math.abs(a.y-b.y)<=eps) out.pop();
+	      }
+	      return out;
+	    }
+
+    function roundedRectOutline(w, h, r, arcSteps=18){
+      // Centered at origin; clockwise.
+      const W = Math.max(1, w);
+      const H = Math.max(1, h);
+      const R = clampNum(r, 0, Math.min(W, H)/2);
+
+      const x0 = -W/2, x1 = W/2;
+      const y0 = -H/2, y1 = H/2;
+
+      const pts = [];
+
+      // Start at top edge, just right of top-left corner
+      pts.push({ x: x0 + R, y: y1 });
+
+      // Top edge to before top-right corner
+      pts.push({ x: x1 - R, y: y1 });
+
+      // Top-right arc: 90° -> 0°
+      {
+        const cx = x1 - R, cy = y1 - R;
+        const arc = arcPoints(cx, cy, R, Math.PI/2, 0, arcSteps);
+        arc.shift(); // remove first duplicate
+        pts.push(...arc);
+      }
+
+      // Right edge
+      pts.push({ x: x1, y: y0 + R });
+
+      // Bottom-right arc: 0° -> -90°
+      {
+        const cx = x1 - R, cy = y0 + R;
+        const arc = arcPoints(cx, cy, R, 0, -Math.PI/2, arcSteps);
+        arc.shift();
+        pts.push(...arc);
+      }
+
+      // Bottom edge
+      pts.push({ x: x0 + R, y: y0 });
+
+      // Bottom-left arc: -90° -> -180°
+      {
+        const cx = x0 + R, cy = y0 + R;
+        const arc = arcPoints(cx, cy, R, -Math.PI/2, -Math.PI, arcSteps);
+        arc.shift();
+        pts.push(...arc);
+      }
+
+      // Left edge
+      pts.push({ x: x0, y: y1 - R });
+
+      // Top-left arc: 180° -> 90°
+      {
+        const cx = x0 + R, cy = y1 - R;
+        const arc = arcPoints(cx, cy, R, Math.PI, Math.PI/2, arcSteps);
+        arc.shift();
+        pts.push(...arc);
+      }
+
+	      return normalizeOutline(pts);
+    }
+
+    function capsuleOutline(w, h, arcSteps=22){
+      // "Oval" as a capsule/stadium shape:
+      // - End caps are semicircles automatically derived from the *minor* dimension.
+      // - If width >= height: horizontal capsule with end radius = height/2.
+      // - If height > width: vertical capsule with end radius = width/2.
+      const W = Math.max(1, w);
+      const H = Math.max(1, h);
+
+      const horizontal = (W >= H);
+      if (horizontal){
+        const r = H/2;
+        const xL = -W/2, xR = W/2;
+        const yT = H/2, yB = -H/2;
+
+        const pts = [];
+        // start on top, left of right arc
+        pts.push({ x: xL + r, y: yT });
+        pts.push({ x: xR - r, y: yT });
+
+        // right arc: 90° -> -90°
+        {
+          const cx = xR - r, cy = 0;
+          const arc = arcPoints(cx, cy, r, Math.PI/2, -Math.PI/2, arcSteps);
+          arc.shift();
+          pts.push(...arc);
+        }
+
+        // bottom straight
+        pts.push({ x: xL + r, y: yB });
+
+        // left arc: -90° -> -270°  (LEFT half of circle)
+        {
+          const cx = xL + r, cy = 0;
+          const arc = arcPoints(cx, cy, r, -Math.PI/2, -3*Math.PI/2, arcSteps);
+          arc.shift();
+          pts.push(...arc);
+        }
+	        return normalizeOutline(pts);
+      } else {
+        // vertical capsule
+        const r = W/2;
+        const yB = -H/2, yT = H/2;
+        const xL = -W/2, xR = W/2;
+
+        const pts = [];
+        // start on right, below top arc
+        pts.push({ x: xR, y: yB + r });
+        pts.push({ x: xR, y: yT - r });
+
+        // top arc: 0° -> 180°
+        {
+          const cx = 0, cy = yT - r;
+          const arc = arcPoints(cx, cy, r, 0, Math.PI, arcSteps);
+          arc.shift();
+          pts.push(...arc);
+        }
+
+        // left straight down
+        pts.push({ x: xL, y: yB + r });
+
+        // bottom arc: 180° -> 360°  (BOTTOM half of circle)
+        {
+          const cx = 0, cy = yB + r;
+          const arc = arcPoints(cx, cy, r, Math.PI, 2*Math.PI, arcSteps);
+          arc.shift();
+          pts.push(...arc);
+        }
+	        return normalizeOutline(pts);
+      }
+    }
+
+    // ============================================================
+    // THREE.JS SCENE
+    // ============================================================
+
+    const container = document.getElementById('canvas-container');
+    const scene = new THREE.Scene();
+    scene.background = new THREE.Color(0xf3f4f6);
+
+    const camera = new THREE.PerspectiveCamera(45, window.innerWidth / window.innerHeight, 0.1, 50000);
+    camera.position.set(250, 200, 350);
+
+    const renderer = new THREE.WebGLRenderer({ antialias: true });
+    renderer.setSize(window.innerWidth, window.innerHeight);
+    renderer.shadowMap.enabled = true;
+    renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+    container.appendChild(renderer.domElement);
+
+    const controls = new OrbitControls(camera, renderer.domElement);
+    controls.enableDamping = true;
+
+    scene.add(new THREE.AmbientLight(0xffffff, 0.75));
+    const dirLight = new THREE.DirectionalLight(0xffffff, 1.0);
+    dirLight.position.set(100, 200, 100);
+    dirLight.castShadow = true;
+    scene.add(dirLight);
+
+    const backLight = new THREE.DirectionalLight(0xbfdbfe, 0.5);
+    backLight.position.set(-100, 80, -100);
+    scene.add(backLight);
+
+    const materialSteel = new THREE.MeshStandardMaterial({
+      color: 0x64748b,
+      metalness: 0.45,
+      roughness: 0.55,
+      side: THREE.DoubleSide
+    });
+
+    function frameObject(object) {
+      const box = new THREE.Box3().setFromObject(object);
+      if (box.isEmpty()) return;
+      const size = new THREE.Vector3();
+      const center = new THREE.Vector3();
+      box.getSize(size);
+      box.getCenter(center);
+
+      const maxDim = Math.max(size.x, size.y, size.z);
+      const dist = maxDim * 2.5;
+
+      const dir = new THREE.Vector3().subVectors(camera.position, controls.target).normalize();
+      camera.position.copy(center).add(dir.multiplyScalar(dist));
+      camera.near = dist * 0.01;
+      camera.far = dist * 10;
+      camera.updateProjectionMatrix();
+      controls.target.copy(center);
+      controls.update();
+    }
+
+    const PREVIEW_EXTRUSION_LENGTH = 30; // mm (visual only)
+    let currentMesh = null;
+    let currentOutline = null;
+    let currentSpec = null;
+    let currentType = null;
+
+    function buildMeshFromOutline(outlinePts, depthMm){
+      if (!outlinePts || outlinePts.length < 3) return null;
+
+      const shape = new THREE.Shape();
+      shape.moveTo(outlinePts[0].x, outlinePts[0].y);
+      for (let i=1;i<outlinePts.length;i++){
+        shape.lineTo(outlinePts[i].x, outlinePts[i].y);
+      }
+      shape.lineTo(outlinePts[0].x, outlinePts[0].y);
+
+      const geo = new THREE.ExtrudeGeometry(shape, {
+        depth: depthMm,
+        bevelEnabled: false,
+        curveSegments: 16
+      });
+      geo.translate(0, 0, -depthMm/2);
+
+      const mesh = new THREE.Mesh(geo, materialSteel);
+      mesh.rotation.x = Math.PI * 0.18;
+      mesh.rotation.y = Math.PI * 0.20;
+      return mesh;
+    }
+
+    function clearCurrent(){
+      if (currentMesh){
+        scene.remove(currentMesh);
+        currentMesh.traverse(c => { if (c.geometry) c.geometry.dispose(); });
+      }
+      currentMesh = null;
+      currentOutline = null;
+      currentSpec = null;
+      currentType = null;
+    }
+
+    // ============================================================
+    // UI
+    // ============================================================
+
+    const sizeSelect = document.getElementById('size-select');
+    const customContainer = document.getElementById('custom-container');
+    const customFields = document.getElementById('custom-fields');
+    const applyCustomBtn = document.getElementById('apply-custom-btn');
+    const radios = document.querySelectorAll('input[name="open-type"]');
+
+    const specW = document.getElementById('spec-w');
+    const specH = document.getElementById('spec-h');
+    const specR = document.getElementById('spec-r');
+    const lblR = document.getElementById('lbl-r');
+
+    function getType(){
+      return document.querySelector('input[name="open-type"]:checked').value;
+    }
+
+    function populateSizesForType(type){
+      sizeSelect.innerHTML = "";
+      const list = PRESETS[type] || [];
+      for (const s of list){
+        const opt = document.createElement('option');
+        opt.value = s.key;
+        opt.textContent = s.key;
+        sizeSelect.appendChild(opt);
+      }
+      const optC = document.createElement('option');
+      optC.value = "__custom__";
+      optC.textContent = "Custom...";
+      sizeSelect.appendChild(optC);
+    }
+
+    function getCustomFieldDefs(type){
+      if (type === "rrect"){
+        return [
+          { id:"w", label:"Width",  min:10, max:5000, step:1, value:300 },
+          { id:"h", label:"Height", min:10, max:5000, step:1, value:200 },
+          { id:"r", label:"Radius", min:0,  max:2500, step:1, value:DEFAULT_RADIUS }
+        ];
+      }
+      // oval
+      return [
+        { id:"w", label:"Width",  min:10, max:8000, step:1, value:400 },
+        { id:"h", label:"Height", min:10, max:8000, step:1, value:200 }
+      ];
+    }
+
+    function renderCustomFields(type, seedSpec){
+      const defs = getCustomFieldDefs(type);
+      customFields.innerHTML = "";
+      for (const def of defs){
+        let v = def.value;
+        if (seedSpec && seedSpec[def.id] !== undefined) v = seedSpec[def.id];
+
+        const wrap = document.createElement('div');
+        wrap.className = "flex flex-col";
+
+        const lab = document.createElement('label');
+        lab.className = "text-xs font-medium text-gray-700";
+        lab.textContent = def.label;
+
+        const inp = document.createElement('input');
+        inp.type = "number";
+        inp.id = "cust-" + def.id;
+        inp.className = "w-full border border-blue-200 rounded-md p-2 text-sm focus:ring-2 focus:ring-blue-500 outline-none bg-white";
+        inp.step = String(def.step);
+        inp.min = String(def.min);
+        inp.max = String(def.max);
+        inp.value = String(v);
+
+        wrap.appendChild(lab);
+        wrap.appendChild(inp);
+        customFields.appendChild(wrap);
+      }
+    }
+
+    function readCustomSpec(type){
+      const defs = getCustomFieldDefs(type);
+      const get = (id) => {
+        const el = document.getElementById("cust-" + id);
+        const def = defs.find(d => d.id === id);
+        if (!el || !def) return def ? def.value : 0;
+        return clampNum(el.value, def.min, def.max);
+      };
+
+      if (type === "rrect"){
+        const w = get("w");
+        const h = get("h");
+        const r = get("r");
+        return { key: "Custom", w, h, r };
+      } else {
+        const w = get("w");
+        const h = get("h");
+        return { key: "Custom", w, h };
+      }
+    }
+
+    function getPresetSpec(type, key){
+      const arr = PRESETS[type] || [];
+      return arr.find(s => s.key === key) || arr[0] || null;
+    }
+
+    function makeOutline(type, spec){
+      if (!spec) return [];
+      if (type === "rrect"){
+        const r = (spec.r === undefined) ? DEFAULT_RADIUS : spec.r;
+        return roundedRectOutline(spec.w, spec.h, r, 18);
+      }
+      // oval
+      return capsuleOutline(spec.w, spec.h, 26);
+    }
+
+    function updateDimBox(type, spec){
+      if (!spec){
+        specW.textContent = "-";
+        specH.textContent = "-";
+        specR.textContent = "-";
+        return;
+      }
+
+      specW.textContent = `${Number(spec.w).toFixed(0)}`;
+      specH.textContent = `${Number(spec.h).toFixed(0)}`;
+
+      if (type === "rrect"){
+        lblR.textContent = "Corner radius:";
+        const r = clampNum((spec.r===undefined)?DEFAULT_RADIUS:spec.r, 0, Math.min(spec.w, spec.h)/2);
+        specR.textContent = `${r.toFixed(0)}`;
+      } else {
+        // capsule end radius is computed from minor dimension
+        const endR = (spec.w >= spec.h) ? (spec.h/2) : (spec.w/2);
+        lblR.textContent = "End radius (auto):";
+        specR.textContent = `${endR.toFixed(0)}`;
+      }
+    }
+
+    function createOpening(){
+      clearCurrent();
+      const type = getType();
+      const key = sizeSelect.value;
+
+      const spec = (key === "__custom__") ? readCustomSpec(type) : getPresetSpec(type, key);
+      if (!spec) return;
+
+      // ensure defaults
+      if (type === "rrect" && (spec.r === undefined || spec.r === null)) spec.r = DEFAULT_RADIUS;
+
+      const outline = makeOutline(type, spec);
+      const mesh = buildMeshFromOutline(outline, PREVIEW_EXTRUSION_LENGTH);
+      if (!mesh) return;
+
+      scene.add(mesh);
+      currentMesh = mesh;
+      currentOutline = outline;
+      currentSpec = spec;
+      currentType = type;
+
+      updateDimBox(type, spec);
+      frameObject(mesh);
+    }
+
+    function updateUI(){
+      const type = getType();
+      const key = sizeSelect.value;
+
+      const isCustom = (key === "__custom__");
+      if (isCustom){
+        customContainer.classList.remove('hidden');
+        // seed from first preset of this type
+        const seed = (PRESETS[type] && PRESETS[type][0]) ? PRESETS[type][0] : null;
+        renderCustomFields(type, seed);
+      } else {
+        customContainer.classList.add('hidden');
+      }
+      createOpening();
+    }
+
+    applyCustomBtn.addEventListener('click', () => {
+      if (sizeSelect.value === "__custom__") createOpening();
+    });
+
+    radios.forEach(r => r.addEventListener('change', () => {
+      const type = getType();
+      populateSizesForType(type);
+      updateUI();
+    }));
+
+    sizeSelect.addEventListener('change', updateUI);
+
+    // init
+    populateSizesForType(getType());
+    updateUI();
+
+    function animate(){
+      requestAnimationFrame(animate);
+      controls.update();
+      renderer.render(scene, camera);
+    }
+    animate();
+
+    window.addEventListener('resize', () => {
+      camera.aspect = window.innerWidth / window.innerHeight;
+      camera.updateProjectionMatrix();
+      renderer.setSize(window.innerWidth, window.innerHeight);
+      if (currentMesh) frameObject(currentMesh);
+    });
+
+    // ============================================================
+    // STL DOWNLOAD
+    // ============================================================
+    document.getElementById('download-stl-btn').addEventListener('click', () => {
+      if (!currentMesh || !currentType || !currentSpec) return;
+
+      const exporter = new STLExporter();
+      const result = exporter.parse(currentMesh, { binary: true });
+
+      const blob = new Blob([result], { type: 'application/octet-stream' });
+      const link = document.createElement('a');
+      link.href = URL.createObjectURL(blob);
+
+      const safeKey = (currentSpec.key || "Opening").replace(/\s+/g, "_").replace(/[^A-Za-z0-9_\-]/g, "");
+      link.download = `Opening_${currentType}_${safeKey}.stl`;
+      link.click();
+      URL.revokeObjectURL(link.href);
+    });
+
+    // ============================================================
+    // DXF EXPORT (R12 / AC1009)
+    // Single closed POLYLINE outlining the 2D opening in the XY plane.
+    // ============================================================
+
+    function dxfJoin(lines){ return lines.join("\n") + "\n"; }
+
+    function addLayerTable(lines, layerNames){
+      lines.push("0","SECTION","2","TABLES");
+      lines.push("0","TABLE","2","LAYER","70",String(layerNames.length));
+      for (const lname of layerNames){
+        lines.push("0","LAYER","2",lname,"70","0","62","7","6","CONTINUOUS");
+      }
+      lines.push("0","ENDTAB","0","ENDSEC");
+    }
+
+    function addClosedPolyline(lines, layer, pts){
+      lines.push("0","POLYLINE");
+      lines.push("8", layer);
+      lines.push("66","1");
+      lines.push("10","0.0","20","0.0","30","0.0");
+      lines.push("70","1");
+
+      for (const p of pts){
+        lines.push("0","VERTEX");
+        lines.push("8", layer);
+        lines.push("10", String(p.x), "20", String(p.y), "30", "0.0");
+      }
+      lines.push("0","SEQEND");
+    }
+
+    function exportDXF(outlinePts){
+      const layer = "OPENING";
+      const lines = [];
+      lines.push("0","SECTION","2","HEADER","9","$ACADVER","1","AC1009","0","ENDSEC");
+      addLayerTable(lines, [layer]);
+
+      lines.push("0","SECTION","2","ENTITIES");
+      addClosedPolyline(lines, layer, outlinePts);
+      lines.push("0","ENDSEC","0","EOF");
+      return dxfJoin(lines);
+    }
+
+    document.getElementById('download-dxf-btn').addEventListener('click', () => {
+      if (!currentOutline || currentOutline.length < 3 || !currentType || !currentSpec) return;
+
+      const dxfContent = exportDXF(currentOutline);
+
+      const blob = new Blob([dxfContent], { type: 'application/dxf' });
+      const link = document.createElement('a');
+      link.href = URL.createObjectURL(blob);
+
+      const safeKey = (currentSpec.key || "Opening").replace(/\s+/g, "_").replace(/[^A-Za-z0-9_\-]/g, "");
+      link.download = `Opening_${currentType}_${safeKey}_R12.dxf`;
+      link.click();
+      URL.revokeObjectURL(link.href);
+    });
+
+  </script>
+</body>
+</html>

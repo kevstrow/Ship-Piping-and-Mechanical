@@ -1,0 +1,1013 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Structural Steel Profile Generator</title>
+  <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
+  <style>
+    body { margin: 0; overflow: hidden; background-color: #f3f4f6; }
+    #canvas-container { width: 100%; height: 100vh; display: block; }
+    .overlay { position: absolute; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; }
+    .panel { pointer-events: auto; }
+    ::-webkit-scrollbar { width: 8px; height: 8px; }
+    ::-webkit-scrollbar-track { background: #f1f1f1; }
+    ::-webkit-scrollbar-thumb { background: #888; border-radius: 4px; }
+    ::-webkit-scrollbar-thumb:hover { background: #555; }
+
+    /* Custom radio styling */
+    .type-radio:checked + div {
+      background-color: #eff6ff; /* blue-50 */
+      border-color: #60a5fa;     /* blue-400 */
+    }
+  </style>
+  <script type="importmap">
+    {
+      "imports": {
+        "three": "https://unpkg.com/three@0.160.0/build/three.module.js",
+        "three/addons/": "https://unpkg.com/three@0.160.0/examples/jsm/"
+      }
+    }
+  </script>
+</head>
+
+<body class="text-gray-800 font-sans">
+  <div id="canvas-container"></div>
+
+  <div class="overlay flex flex-col md:flex-row justify-between p-4 md:p-6 gap-4">
+
+    <!-- LEFT PANEL (keep layout consistent with the fittings generator) -->
+    <div class="panel bg-white/90 backdrop-blur shadow-lg rounded-xl p-6 w-full md:w-96 flex flex-col gap-4 border border-gray-200 h-fit max-h-[90vh] overflow-y-auto">
+      <h1 class="text-2xl font-bold text-slate-700">Structural Profile Generator</h1>
+      <p class="text-sm text-gray-500">2D DXF closed polylines + 3D STL preview (extruded)</p>
+
+      <!-- Profile Type Grid -->
+      <div>
+        <label class="block text-sm font-medium text-gray-700 mb-2">Select Profile Type</label>
+        <div class="grid grid-cols-2 gap-2">
+          <label class="cursor-pointer">
+            <input type="radio" name="fit-type" value="angle-equal" class="type-radio hidden" checked>
+            <div class="border border-gray-200 rounded-lg p-2 text-center hover:bg-gray-50 transition text-sm font-medium">Angle (Equal)</div>
+          </label>
+          <label class="cursor-pointer">
+            <input type="radio" name="fit-type" value="angle-unequal" class="type-radio hidden">
+            <div class="border border-gray-200 rounded-lg p-2 text-center hover:bg-gray-50 transition text-sm font-medium">Angle (Unequal)</div>
+          </label>
+
+          <label class="cursor-pointer">
+            <input type="radio" name="fit-type" value="channel" class="type-radio hidden">
+            <div class="border border-gray-200 rounded-lg p-2 text-center hover:bg-gray-50 transition text-sm font-medium">Channel</div>
+          </label>
+          <label class="cursor-pointer">
+            <input type="radio" name="fit-type" value="girder" class="type-radio hidden">
+            <div class="border border-gray-200 rounded-lg p-2 text-center hover:bg-gray-50 transition text-sm font-medium">Girder (T‑Girder)</div>
+          </label>
+
+          <label class="cursor-pointer">
+            <input type="radio" name="fit-type" value="bulb" class="type-radio hidden">
+            <div class="border border-gray-200 rounded-lg p-2 text-center hover:bg-gray-50 transition text-sm font-medium">Bulb Flat</div>
+          </label>
+          <label class="cursor-pointer">
+            <input type="radio" name="fit-type" value="flatbar" class="type-radio hidden">
+            <div class="border border-gray-200 rounded-lg p-2 text-center hover:bg-gray-50 transition text-sm font-medium">Flat Bar</div>
+          </label>
+        </div>
+      </div>
+
+      <!-- Size Selection -->
+      <div>
+        <label class="block text-sm font-medium text-gray-700 mb-1">Size</label>
+        <select id="size-select" class="w-full border border-gray-300 rounded-md p-2 focus:ring-2 focus:ring-blue-500 outline-none bg-white mb-2"></select>
+
+
+<!-- Custom Dimensions (appears when Size = Custom...) -->
+<div id="custom-container" class="hidden mt-3 bg-blue-50/60 border border-blue-200 rounded-lg p-3">
+  <div class="flex items-center justify-between mb-2">
+    <span class="text-sm font-semibold text-slate-700">Custom Dimensions (mm)</span>
+    <button id="apply-custom-btn" class="text-xs bg-blue-600 hover:bg-blue-700 text-white font-bold px-3 py-1 rounded-md shadow-sm">
+      Apply
+    </button>
+  </div>
+  <div id="custom-fields" class="grid grid-cols-2 gap-2"></div>
+  <p class="text-xs text-slate-600 mt-2 leading-snug">
+    Tip: These values override the preset size list. The 2D DXF remains a single closed polyline.
+  </p>
+</div>
+
+        <!-- Secondary selection container (kept for layout compatibility; unused for profiles) -->
+        <div id="reducing-container" class="hidden">
+          <label class="block text-sm font-medium text-gray-700 mb-1">Secondary</label>
+          <select id="size-select-2" class="w-full border border-gray-300 rounded-md p-2 focus:ring-2 focus:ring-blue-500 outline-none bg-white"></select>
+
+          <div id="ecc-container" class="hidden mt-2">
+            <label class="block text-sm font-medium text-gray-700 mb-1">Option</label>
+            <select id="ecc-flat" class="w-full border border-gray-300 rounded-md p-2 focus:ring-2 focus:ring-blue-500 outline-none bg-yellow-50">
+              <option value="top" selected>Option A</option>
+              <option value="bottom">Option B</option>
+            </select>
+          </div>
+        </div>
+      </div>
+
+
+      <!-- Dimensions Table -->
+      <div class="bg-gray-50 rounded-lg p-3 border border-gray-200 text-sm">
+        <h3 class="font-semibold text-gray-700 border-b border-gray-200 pb-2 mb-2">Section Properties (mm, kg/m)</h3>
+        <div class="grid grid-cols-2 gap-y-2 gap-x-4">
+          <span class="text-gray-500" id="lbl-main">Weight:</span>
+          <span id="spec-od" class="font-medium text-right">-</span>
+
+          <span class="text-gray-500" id="lbl-dim1">Dim 1:</span>
+          <span id="spec-dim1" class="font-medium text-right">-</span>
+
+          <span class="text-gray-500" id="lbl-dim2">Dim 2:</span>
+          <span id="spec-dim2" class="font-medium text-right">-</span>
+
+          <span class="text-gray-500">Material:</span>
+          <span class="font-medium text-right">Steel (ρ = 7850 kg/m³)</span>
+        </div>
+      </div>
+
+      <!-- Actions -->
+      <div class="pt-2 flex flex-col gap-2">
+        <button id="download-btn" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 px-4 rounded-lg transition shadow-md flex justify-center items-center gap-2 cursor-pointer">
+          <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+          </svg>
+          Download STL
+        </button>
+
+        <button id="download-dxf-btn" class="w-full bg-green-600 hover:bg-green-700 text-white font-bold py-3 px-4 rounded-lg transition shadow-md flex justify-center items-center gap-2 cursor-pointer">
+          <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+          </svg>
+          Download DXF
+        </button>
+
+        <!-- Instruction box (same placement as fittings generator) -->
+        <div style="margin-top:4px; padding:10px 14px; border:1px solid #e0d18a; border-radius:10px; background:#fff7cc; font-size:14px; line-height:1.4;">
+          <strong>How to create a 3D member in AutoCAD (EXTRUDE)</strong>
+          <ol style="margin:6px 0 0 18px;">
+            <li>Open the DXF in AutoCAD.</li>
+            <li>Select the profile polyline (it is already <em>closed</em>).</li>
+            <li>Run <code>EXTRUDE</code> → enter the length (e.g., <code>6000</code> for a 6 m member).</li>
+            <li>Optional: run <code>MOVE</code> / <code>ALIGN</code> to position on your structure.</li>
+          </ol>
+        </div>
+      </div>
+    </div>
+
+    <!-- RIGHT MINI PANEL (unchanged) -->
+    <div class="panel bg-white/80 backdrop-blur shadow-md rounded-lg p-3 h-fit self-end hidden md:block">
+      <p class="text-xs text-gray-500">
+        <strong>Left Click:</strong> Rotate <br>
+        <strong>Right Click:</strong> Pan <br>
+        <strong>Scroll:</strong> Zoom
+      </p>
+    </div>
+
+  </div>
+
+  <script type="module">
+    import * as THREE from 'three';
+    import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
+    import { STLExporter } from 'three/addons/exporters/STLExporter.js';
+
+    // ============================================================
+    // SECTION DATABASE (metric, representative "standard" sizes)
+    // Units: mm for dimensions.
+    // Weight is computed from area and density (ρ = 7850 kg/m³).
+    // ============================================================
+
+    const RHO = 7850; // kg/m^3
+    const MM2_TO_M2 = 1e-6;
+
+    function kgPerM_fromArea_mm2(area_mm2){
+      // kg/m = area(m^2) * rho (kg/m^3)
+      return area_mm2 * MM2_TO_M2 * RHO;
+    }
+
+    // Notes:
+    // - These are simplified geometric models (no root radii).
+    // - Sizes are intended for teaching/visualization and reasonable weight estimation.
+    const SECTION_DB = {
+      "flatbar": [
+        { key:"FB 50x6",   b:50,  t:6,  mass:2.36 },
+        { key:"FB 75x8",   b:75,  t:8,  mass:4.71 },
+        { key:"FB 100x10", b:100, t:10, mass:7.85 },
+        { key:"FB 150x12", b:150, t:12, mass:14.1 },
+        { key:"FB 200x12", b:200, t:12, mass:18.8 },
+        { key:"FB 250x15", b:250, t:15, mass:29.4 },
+        { key:"FB 300x15", b:300, t:15, mass:35.3 },
+        { key:"FB 300x20", b:300, t:20, mass:47.1 },
+        { key:"FB 350x20", b:350, t:20, mass:54.9 },
+        { key:"FB 400x25", b:400, t:25, mass:78.5 },
+        { key:"FB 450x25", b:450, t:25, mass:88.3 }
+      ],
+      "angle-equal": [
+        { key:"L 50x50x5",    a:50,  t:5,  mass:3.8 },
+        { key:"L 75x75x6",    a:75,  t:6,  mass:6.9 },
+        { key:"L 90x90x8",    a:90,  t:8,  mass:10.9 },
+        { key:"L 100x100x10", a:100, t:10, mass:15.0 },
+        { key:"L 120x120x10", a:120, t:10, mass:18.0 },
+        { key:"L 150x150x12", a:150, t:12, mass:27.3 },
+        { key:"L 180x180x15", a:180, t:15, mass:40.3 },
+        { key:"L 200x200x16", a:200, t:16, mass:48.5 },
+        { key:"L 220x220x18", a:220, t:18, mass:60.0 },
+        { key:"L 250x250x25", a:250, t:25, mass:93.8 }
+      ],
+      "angle-unequal": [
+        { key:"L 75x50x6",    a:75,  b:50,  t:6,  mass:5.7 },
+        { key:"L 100x75x8",   a:100, b:75,  t:8,  mass:10.6 },
+        { key:"L 120x80x8",   a:120, b:80,  t:8,  mass:12.2 },
+        { key:"L 150x100x10", a:150, b:100, t:10, mass:19.8 },
+        { key:"L 180x110x12", a:180, b:110, t:12, mass:27.6 },
+        { key:"L 200x100x12", a:200, b:100, t:12, mass:27.9 },
+        { key:"L 220x110x14", a:220, b:110, t:14, mass:35.6 },
+        { key:"L 250x150x15", a:250, b:150, t:15, mass:50.9 },
+        { key:"L 250x150x20", a:250, b:150, t:20, mass:66.5 },
+        { key:"L 250x150x25", a:250, b:150, t:25, mass:82.0 }
+      ],
+      "channel": [
+        { key:"150 PFC", d:150, bf:75,  tw:5.5, tf:10.0, mass:17.9 },
+        { key:"180 PFC", d:180, bf:75,  tw:6.0, tf:10.5, mass:20.3 },
+        { key:"200 PFC", d:200, bf:75,  tw:6.0, tf:12.5, mass:23.4 },
+        { key:"230 PFC", d:230, bf:75,  tw:6.5, tf:12.5, mass:25.7 },
+        { key:"260 PFC", d:260, bf:75,  tw:7.0, tf:12.0, mass:27.6 },
+        { key:"300 PFC", d:300, bf:90,  tw:9.0, tf:15.5, mass:41.4 },
+        { key:"340 PFC", d:340, bf:90,  tw:9.5, tf:16.0, mass:47.5 },
+        { key:"380 PFC", d:380, bf:100, tw:10.0, tf:16.5, mass:55.2 },
+        { key:"430 PFC", d:430, bf:100, tw:11.0, tf:17.5, mass:63.9 },
+        { key:"450 PFC", d:450, bf:100, tw:11.5, tf:18.0, mass:68.5 }
+      ],
+      "girder": [
+        // T‑girder / T‑bar simplified (ship stiffener):
+        // webH = web height below flange (mm)
+        // tw   = web thickness (mm)
+        // bf   = flange width (mm)
+        // tf   = flange thickness (mm)
+        { key:"T 200x100", webH:190, bf:100, tw:6,  tf:10 },
+        { key:"T 250x125", webH:238, bf:125, tw:7,  tf:12 },
+        { key:"T 300x150", webH:286, bf:150, tw:8,  tf:14 },
+        { key:"T 350x175", webH:334, bf:175, tw:10, tf:16 }
+      ],
+      "bulb": [
+        // Bulb flat (HP-style) simplified:
+        // bp = web depth/width (mm), t = web thickness (mm), r = bulb radius (mm)
+        // "mass" uses your shipbuilding-realistic kg/m values.
+        { key:"HP 100x6",  bp:100, t:6,  r:12, mass:5.4 },
+        { key:"HP 120x7",  bp:120, t:7,  r:14, mass:7.4 },
+        { key:"HP 140x8",  bp:140, t:8,  r:16, mass:10.0 },
+        { key:"HP 160x9",  bp:160, t:9,  r:18, mass:12.8 },
+        { key:"HP 180x10", bp:180, t:10, r:20, mass:15.9 },
+        { key:"HP 200x10", bp:200, t:10, r:20, mass:17.6 },
+        { key:"HP 220x11", bp:220, t:11, r:22, mass:21.4 },
+        { key:"HP 240x12", bp:240, t:12, r:24, mass:25.4 },
+        { key:"HP 260x12", bp:260, t:12, r:24, mass:27.6 },
+        { key:"HP 300x13", bp:300, t:13, r:26, mass:34.0 },
+        { key:"HP 350x15", bp:350, t:15, r:30, mass:48.0 },
+        { key:"HP 430x20", bp:430, t:20, r:40, mass:80.0 },  // typical mid-range of 78–82
+        { key:"HP 430x25", bp:430, t:25, r:50, mass:97.5 }   // typical mid-range of 95–100
+      ]
+    };
+
+
+    // ============================================================
+    // GEOMETRY HELPERS (2D outlines in XY, origin at centroid-ish)
+    // DXF output: single closed POLYLINE (R12).
+    // ============================================================
+
+    function polyArea(points){
+      // points: [{x,y}, ...] closed or not; algorithm closes automatically
+      let a = 0;
+      for (let i=0;i<points.length;i++){
+        const p = points[i];
+        const q = points[(i+1)%points.length];
+        a += (p.x*q.y - q.x*p.y);
+      }
+      return 0.5 * a;
+    }
+
+    function centroid(points){
+      // polygon centroid (assumes non-self-intersecting)
+      let a = 0, cx = 0, cy = 0;
+      for (let i=0;i<points.length;i++){
+        const p = points[i];
+        const q = points[(i+1)%points.length];
+        const cross = (p.x*q.y - q.x*p.y);
+        a += cross;
+        cx += (p.x + q.x) * cross;
+        cy += (p.y + q.y) * cross;
+      }
+      a *= 0.5;
+      const f = 1/(6*a || 1);
+      return { x: cx*f, y: cy*f };
+    }
+
+    function translate(points, dx, dy){
+      return points.map(p => ({x:p.x+dx, y:p.y+dy}));
+    }
+
+    function rectOutline(b, t){
+      // rectangle outline starting top-left, clockwise
+      const w = b, h = t;
+      const pts = [
+        {x:-w/2, y:h/2},
+        {x: w/2, y:h/2},
+        {x: w/2, y:-h/2},
+        {x:-w/2, y:-h/2}
+      ];
+      return pts;
+    }
+
+    function equalAngleOutline(a, t){
+      // L section with legs a x a and thickness t
+      // Build around the outside, clockwise. Origin initially at outside corner.
+      const pts = [
+        {x:0, y:0},
+        {x:a, y:0},
+        {x:a, y:t},
+        {x:t, y:t},
+        {x:t, y:a},
+        {x:0, y:a}
+      ];
+      // shift to centroid-ish for nicer view
+      const c = centroid(pts);
+      return translate(pts, -c.x, -c.y);
+    }
+
+    function unequalAngleOutline(a, b, t){
+      // legs: a (X direction), b (Y direction)
+      const pts = [
+        {x:0, y:0},
+        {x:a, y:0},
+        {x:a, y:t},
+        {x:t, y:t},
+        {x:t, y:b},
+        {x:0, y:b}
+      ];
+      const c = centroid(pts);
+      return translate(pts, -c.x, -c.y);
+    }
+
+    function channelOutline(d, bf, tw, tf){
+      // channel open side to +X (so web is on -X side)
+      // outer dims: depth d (Y), flange width bf (X)
+      // web thickness tw, flange thickness tf
+      const yTop = d/2;
+      const yBot = -d/2;
+      const xWebOuter = -bf/2;
+      const xFlangeOuter = bf/2;
+
+      const xWebInner = xWebOuter + tw;
+      const yTopInner = yTop - tf;
+      const yBotInner = yBot + tf;
+
+      const pts = [
+        {x:xWebOuter, y:yTop},
+        {x:xFlangeOuter, y:yTop},
+        {x:xFlangeOuter, y:yTopInner},
+        {x:xWebInner, y:yTopInner},
+        {x:xWebInner, y:yBotInner},
+        {x:xFlangeOuter, y:yBotInner},
+        {x:xFlangeOuter, y:yBot},
+        {x:xWebOuter, y:yBot}
+      ];
+      const c = centroid(pts);
+      return translate(pts, -c.x, -c.y);
+    }
+
+    function tGirderOutline(webH, bf, tw, tf){
+  // T‑girder / T‑bar outline (single flange at top, web centered).
+  // webH = web height below flange (mm)
+  // bf   = flange width (mm)
+  // tw   = web thickness (mm)
+  // tf   = flange thickness (mm)
+  //
+  // Overall depth = webH + tf
+  const d = webH + tf;
+
+  const yTop = d/2;
+  const yBot = -d/2;
+
+  // Flange spans full width, at the top
+  const xFlange = bf/2;
+  // Web centered
+  const xWeb = tw/2;
+
+  const yFlangeBot = yTop - tf;
+
+  const pts = [
+    {x:-xFlange, y:yTop},        // top-left flange
+    {x: xFlange, y:yTop},        // top-right flange
+    {x: xFlange, y:yFlangeBot},  // down to bottom of flange
+    {x: xWeb,    y:yFlangeBot},  // in to right side of web
+    {x: xWeb,    y:yBot},        // down web to bottom
+    {x:-xWeb,    y:yBot},        // across web bottom
+    {x:-xWeb,    y:yFlangeBot},  // up left side of web to flange bottom
+    {x:-xFlange, y:yFlangeBot}   // out to left flange bottom
+  ];
+
+  const c = centroid(pts);
+  return translate(pts, -c.x, -c.y);
+}
+
+
+
+    
+function bulbFlatOutline(depth, tw, r){
+  // Bulb flat (HP-style) simplified cross-section:
+  // - Web/flat: thickness tw (X), depth (Y)
+  // - Bulb: half-circle of radius r attached to ONE edge of the web near the bottom
+  //   (tangent at y=0 and y=2r). The outline must be a SINGLE external boundary (no internal edges).
+  //
+  // Coordinate system before centering:
+  //   web spans x = [0, tw], y = [0, depth]
+  //   bulb is on the LEFT side of the web with center at (0, r), spanning y=[0..2r]
+  const d = Math.max(depth, 2*r + 1e-6);
+
+  const xL = 0;
+  const xR = tw;
+  const yB = 0;
+  const yT = d;
+
+  // Bulb arc (left half-circle) from bottom attach (0,0) up to top attach (0,2r)
+  // IMPORTANT: start the arc at the bottom attach so we do NOT create an internal straight segment.
+  const cx = xL;
+  const cy = r;
+
+  const arcPts = [];
+  const n = 28;
+  for (let i=0;i<=n;i++){
+    // angles from -90deg to +90deg (sweeping along the OUTER boundary)
+    const ang = -Math.PI/2 + (i/n)*Math.PI;
+    arcPts.push({ x: cx - r*Math.cos(ang), y: cy + r*Math.sin(ang) });
+  }
+  // Remove the first point (0,0) because we include bottom-left explicitly in the outline.
+  arcPts.shift();
+
+  // Build outline CCW:
+  // web-top-left -> web-top-right -> bottom-right -> bottom-left -> bulb arc up to top attach
+  // then the polyline closes back to web-top-left (outer edge up the web).
+  const pts = [
+    {x:xL, y:yT},
+    {x:xR, y:yT},
+    {x:xR, y:yB},
+    {x:xL, y:yB},
+    ...arcPts
+  ];
+
+  const c = centroid(pts);
+  return translate(pts, -c.x, -c.y);
+}
+
+    function getProfileSpec(type, key){
+      const arr = SECTION_DB[type] || [];
+      return arr.find(s => s.key === key) || arr[0] || null;
+    }
+
+    function computeArea_mm2(type, s){
+      if (!s) return 0;
+
+      if (type === "flatbar"){
+        return s.b * s.t;
+      }
+      if (type === "angle-equal"){
+        // L area = 2*a*t - t^2
+        return 2*s.a*s.t - s.t*s.t;
+      }
+      if (type === "angle-unequal"){
+        // L area = t*(a+b-t)
+        return s.t * (s.a + s.b - s.t);
+      }
+      if (type === "channel"){
+        // area = 2*bf*tf + (d-2*tf)*tw
+        return 2*s.bf*s.tf + (s.d - 2*s.tf)*s.tw;
+      }
+      
+if (type === "girder"){
+        // T‑girder area = bf*tf + webH*tw (webH is height below flange)
+        const webH = (s.webH !== undefined) ? s.webH : (s.d - s.tf);
+        return (s.bf * s.tf) + (webH * s.tw);
+      }
+      if (type === "bulb"){
+        // plate + semicircle bulb (simplified)
+        return (s.bp * s.t) + (0.5 * Math.PI * s.r * s.r);
+      }
+      return 0;
+    }
+
+    function makeOutline(type, s){
+      if (!s) return [];
+      if (type === "flatbar") return rectOutline(s.b, s.t);
+      if (type === "angle-equal") return equalAngleOutline(s.a, s.t);
+      if (type === "angle-unequal") return unequalAngleOutline(s.a, s.b, s.t);
+      if (type === "channel") return channelOutline(s.d, s.bf, s.tw, s.tf);
+      if (type === "girder") return tGirderOutline((s.webH!==undefined)?s.webH:(s.d - (s.tf||0)), s.bf, s.tw, s.tf);
+      if (type === "bulb") return bulbFlatOutline(s.bp, s.t, s.r);
+      return [];
+    }
+
+    // ============================================================
+    // THREE.JS SCENE (same general setup)
+    // ============================================================
+
+    const container = document.getElementById('canvas-container');
+    const scene = new THREE.Scene();
+    scene.background = new THREE.Color(0xf3f4f6);
+
+    const camera = new THREE.PerspectiveCamera(45, window.innerWidth / window.innerHeight, 0.1, 50000);
+    camera.position.set(200, 200, 300);
+
+    const renderer = new THREE.WebGLRenderer({ antialias: true });
+    renderer.setSize(window.innerWidth, window.innerHeight);
+    renderer.shadowMap.enabled = true;
+    renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+    container.appendChild(renderer.domElement);
+
+    const controls = new OrbitControls(camera, renderer.domElement);
+    controls.enableDamping = true;
+
+    scene.add(new THREE.AmbientLight(0xffffff, 0.7));
+    const dirLight = new THREE.DirectionalLight(0xffffff, 1.0);
+    dirLight.position.set(100, 200, 100);
+    dirLight.castShadow = true;
+    scene.add(dirLight);
+
+    const backLight = new THREE.DirectionalLight(0xbfdbfe, 0.5);
+    backLight.position.set(-100, 50, -100);
+    scene.add(backLight);
+
+    const materialSteel = new THREE.MeshStandardMaterial({
+      color: 0x64748b,
+      metalness: 0.5,
+      roughness: 0.5,
+      side: THREE.DoubleSide
+    });
+
+    function frameObject(object) {
+      const box = new THREE.Box3().setFromObject(object);
+      if (box.isEmpty()) return;
+      const size = new THREE.Vector3();
+      const center = new THREE.Vector3();
+      box.getSize(size);
+      box.getCenter(center);
+
+      const maxDim = Math.max(size.x, size.y, size.z);
+      const dist = maxDim * 2.5;
+
+      const dir = new THREE.Vector3().subVectors(camera.position, controls.target).normalize();
+      camera.position.copy(center).add(dir.multiplyScalar(dist));
+      camera.near = dist * 0.01;
+      camera.far = dist * 10;
+      camera.updateProjectionMatrix();
+      controls.target.copy(center);
+      controls.update();
+    }
+
+    let currentMesh = null;
+    let currentOutline = null;
+    let currentType = null;
+    let currentSpec = null;
+
+    function buildProfileMesh(outlinePts, lengthMm){
+      // outlinePts in mm (XY). Extrude along +Z.
+      const shape = new THREE.Shape();
+      if (!outlinePts || outlinePts.length < 3) return null;
+
+      shape.moveTo(outlinePts[0].x, outlinePts[0].y);
+      for (let i=1;i<outlinePts.length;i++){
+        shape.lineTo(outlinePts[i].x, outlinePts[i].y);
+      }
+      shape.lineTo(outlinePts[0].x, outlinePts[0].y);
+
+      const geo = new THREE.ExtrudeGeometry(shape, {
+        depth: lengthMm,
+        bevelEnabled: false,
+        curveSegments: 16
+      });
+
+      // center extrusion about Z=0 for nicer orbiting
+      geo.translate(0, 0, -lengthMm/2);
+
+      const mesh = new THREE.Mesh(geo, materialSteel);
+      return mesh;
+    }
+
+    function clearCurrent(){
+      if (currentMesh){
+        scene.remove(currentMesh);
+        currentMesh.traverse(c => { if (c.geometry) c.geometry.dispose(); });
+      }
+      currentMesh = null;
+      currentOutline = null;
+      currentType = null;
+      currentSpec = null;
+    }
+
+    
+function createProfile(type, key, lengthMm){
+  clearCurrent();
+
+  const spec = (key === "__custom__") ? readCustomSpec(type) : getProfileSpec(type, key);
+  const outline = makeOutline(type, spec);
+
+      const mesh = buildProfileMesh(outline, lengthMm);
+      if (!mesh) return null;
+
+      // slight tilt so profile is visible as 3D right away
+      mesh.rotation.x = Math.PI * 0.18;
+      mesh.rotation.y = Math.PI * 0.20;
+
+      scene.add(mesh);
+      currentMesh = mesh;
+      currentOutline = outline;
+      currentType = type;
+      currentSpec = spec;
+
+      frameObject(mesh);
+
+      // return UI "dims"
+      const area = computeArea_mm2(type, spec);
+      const w = (spec && typeof spec.mass === 'number') ? spec.mass : kgPerM_fromArea_mm2(area);
+
+      const out = { weight: w, area };
+      if (type === "flatbar"){
+        out.lbl1 = "Width × Thk:";
+        out.val1 = `${spec.b} × ${spec.t}`;
+        out.lbl2 = "Area:";
+        out.val2 = area.toFixed(0);
+      } else if (type === "angle-equal"){
+        out.lbl1 = "Leg × Thk:";
+        out.val1 = `${spec.a} × ${spec.t}`;
+        out.lbl2 = "Area:";
+        out.val2 = area.toFixed(0);
+      } else if (type === "angle-unequal"){
+        out.lbl1 = "Legs × Thk:";
+        out.val1 = `${spec.a} × ${spec.b} × ${spec.t}`;
+        out.lbl2 = "Area:";
+        out.val2 = area.toFixed(0);
+      } else if (type === "channel"){
+        out.lbl1 = "d × bf:";
+        out.val1 = `${spec.d} × ${spec.bf}`;
+        out.lbl2 = "tw × tf:";
+        out.val2 = `${spec.tw} × ${spec.tf}`;
+      } else if (type === "girder"){
+  const webH = (spec.webH !== undefined) ? spec.webH : (spec.d - spec.tf);
+  out.lbl1 = "WebH × tw:";
+  out.val1 = `${webH} × ${spec.tw}`;
+  out.lbl2 = "bf × tf:";
+  out.val2 = `${spec.bf} × ${spec.tf}`;
+} else if (type === "bulb"){
+        out.lbl1 = "bp × t:";
+        out.val1 = `${spec.bp} × ${spec.t}`;
+        out.lbl2 = "Bulb radius:";
+        out.val2 = `${spec.r}`;
+      }
+      return out;
+    }
+
+    // ============================================================
+    // UI HANDLING (keep ids and panel structure)
+    // ============================================================
+
+    const sizeSelect = document.getElementById('size-select');
+    const sizeSelect2 = document.getElementById('size-select-2'); // unused, kept for layout
+    const reducingContainer = document.getElementById('reducing-container'); // unused
+    // Extrusion length for STL/3D preview is fixed at 100 mm (no UI control)
+    const PREVIEW_EXTRUSION_LENGTH = 100;
+    const radios = document.querySelectorAll('input[name="fit-type"]');
+
+    const specMain = document.getElementById('spec-od');
+    const specDim1 = document.getElementById('spec-dim1');
+    const specDim2 = document.getElementById('spec-dim2');
+    const lblMain = document.getElementById('lbl-main');
+    const lblDim1 = document.getElementById('lbl-dim1');
+    const lblDim2 = document.getElementById('lbl-dim2');
+
+// Custom dimensions UI
+const customContainer = document.getElementById('custom-container');
+const customFields = document.getElementById('custom-fields');
+const applyCustomBtn = document.getElementById('apply-custom-btn');
+
+function clampNum(v, min, max){
+  const n = Number(v);
+  if (!isFinite(n)) return min;
+  return Math.min(max, Math.max(min, n));
+}
+
+function getCustomFieldDefs(type){
+  // Field definitions are in mm. Conservative ranges keep geometry sensible.
+  if (type === "girder"){
+    return [
+      { id:"webH", label:"Web height",  min:50,  max:2000, step:1,   value:300 },
+      { id:"tw",   label:"Web thk",     min:3,   max:60,   step:0.5, value:8   },
+      { id:"bf",   label:"Flange width",min:30,  max:2000, step:1,   value:150 },
+      { id:"tf",   label:"Flange thk",  min:3,   max:80,   step:0.5, value:14  }
+    ];
+  }
+  if (type === "channel"){
+    return [
+      { id:"d",  label:"Depth d",      min:50,  max:2000, step:1,   value:300 },
+      { id:"bf", label:"Flange width", min:20,  max:2000, step:1,   value:90  },
+      { id:"tw", label:"Web thk",      min:3,   max:60,   step:0.5, value:9   },
+      { id:"tf", label:"Flange thk",   min:3,   max:80,   step:0.5, value:15.5 }
+    ];
+  }
+  if (type === "flatbar"){
+    return [
+      { id:"b", label:"Width b", min:10, max:2000, step:1,   value:200 },
+      { id:"t", label:"Thk t",   min:2,  max:200,  step:0.5, value:12  }
+    ];
+  }
+  if (type === "angle-equal"){
+    return [
+      { id:"a", label:"Leg a", min:20, max:2000, step:1,   value:100 },
+      { id:"t", label:"Thk t", min:3,  max:200,  step:0.5, value:10  }
+    ];
+  }
+  if (type === "angle-unequal"){
+    return [
+      { id:"a", label:"Leg a", min:20, max:2000, step:1,   value:150 },
+      { id:"b", label:"Leg b", min:20, max:2000, step:1,   value:100 },
+      { id:"t", label:"Thk t", min:3,  max:200,  step:0.5, value:10  }
+    ];
+  }
+  if (type === "bulb"){
+    return [
+      { id:"bp", label:"Plate depth", min:50, max:2000, step:1,   value:200 },
+      { id:"t",  label:"Plate thk",   min:4,  max:80,   step:0.5, value:10  },
+      { id:"r",  label:"Bulb radius", min:4,  max:200,  step:0.5, value:20  }
+    ];
+  }
+  return [];
+}
+
+function renderCustomFields(type, seedSpec){
+  const defs = getCustomFieldDefs(type);
+  customFields.innerHTML = "";
+
+  for (const def of defs){
+    let v = def.value;
+
+    // seed from current preset where possible
+    if (seedSpec && seedSpec[def.id] !== undefined) v = seedSpec[def.id];
+
+    // girder: seed web height from preset overall depth
+    if (type === "girder" && def.id === "webH" && seedSpec){
+      v = (seedSpec.webH !== undefined) ? seedSpec.webH : Math.max(10, (seedSpec.d || 300) - (seedSpec.tf || 10));
+    }
+
+    const wrap = document.createElement('div');
+    wrap.className = "flex flex-col";
+
+    const lab = document.createElement('label');
+    lab.className = "text-xs font-medium text-gray-700";
+    lab.textContent = def.label;
+
+    const inp = document.createElement('input');
+    inp.type = "number";
+    inp.id = "cust-" + def.id;
+    inp.className = "w-full border border-blue-200 rounded-md p-2 text-sm focus:ring-2 focus:ring-blue-500 outline-none bg-white";
+    inp.step = String(def.step);
+    inp.min = String(def.min);
+    inp.max = String(def.max);
+    inp.value = String(v);
+
+    wrap.appendChild(lab);
+    wrap.appendChild(inp);
+    customFields.appendChild(wrap);
+  }
+}
+
+function readCustomSpec(type){
+  const defs = getCustomFieldDefs(type);
+  const get = (id) => {
+    const el = document.getElementById("cust-" + id);
+    const def = defs.find(d => d.id === id);
+    if (!el || !def) return def ? def.value : 0;
+    return clampNum(el.value, def.min, def.max);
+  };
+
+  if (type === "girder"){
+    const webH = get("webH");
+    const tw = get("tw");
+    const bf = get("bf");
+    const tf = get("tf");
+
+    // sanity: web thickness must be less than flange width
+    const tw2 = Math.min(tw, Math.max(1, bf - 1));
+
+    return { key:"Custom", d: webH + tf, bf, tw: tw2, tf, webH };
+  }
+
+  if (type === "channel"){
+    const d = get("d");
+    const bf = get("bf");
+    const tw = Math.min(get("tw"), Math.max(1, bf - 1));
+    const tf = Math.min(get("tf"), Math.max(1, d/2 - 1));
+    return { key:"Custom", d, bf, tw, tf };
+  }
+
+  if (type === "flatbar"){
+    return { key:"Custom", b:get("b"), t:get("t") };
+  }
+
+  if (type === "angle-equal"){
+    const a = get("a");
+    const t = Math.min(get("t"), Math.max(1, a - 1));
+    return { key:"Custom", a, t };
+  }
+
+  if (type === "angle-unequal"){
+    const a = get("a");
+    const b = get("b");
+    const t = Math.min(get("t"), Math.max(1, Math.min(a,b) - 1));
+    return { key:"Custom", a, b, t };
+  }
+
+  if (type === "bulb"){
+    const bp = get("bp");
+    const t = Math.min(get("t"), Math.max(1, bp - 1));
+    const r = get("r");
+    return { key:"Custom", bp, t, r };
+  }
+
+  return null;
+}
+
+    function populateSizesForType(type){
+  sizeSelect.innerHTML = "";
+  const list = SECTION_DB[type] || [];
+
+  for (const s of list){
+    const opt = document.createElement('option');
+    opt.value = s.key;
+    opt.textContent = s.key;
+    sizeSelect.appendChild(opt);
+  }
+
+  // Add "Custom..." option at the end
+  const optC = document.createElement('option');
+  optC.value = "__custom__";
+  optC.textContent = "Custom...";
+  sizeSelect.appendChild(optC);
+
+  // keep layout compatibility: always hide secondary container
+  reducingContainer.classList.add('hidden');
+}
+
+function updateUI(){
+  const type = document.querySelector('input[name="fit-type"]:checked').value;
+  const key = sizeSelect.value;
+  const L = PREVIEW_EXTRUSION_LENGTH;
+
+  const isCustom = (key === "__custom__");
+  if (isCustom){
+    customContainer.classList.remove('hidden');
+    // Seed custom fields from the first preset for this type (reasonable defaults)
+    const seedKey = (SECTION_DB[type] && SECTION_DB[type][0]) ? SECTION_DB[type][0].key : null;
+    const seed = seedKey ? getProfileSpec(type, seedKey) : null;
+    renderCustomFields(type, seed);
+  } else {
+    customContainer.classList.add('hidden');
+  }
+
+  const dims = createProfile(type, key, L);
+  if (!dims){
+    specMain.textContent = "-";
+    lblDim1.textContent = "Dim 1:";
+    lblDim2.textContent = "Dim 2:";
+    specDim1.textContent = "-";
+    specDim2.textContent = "-";
+    return;
+  }
+
+  lblMain.textContent = "Weight:";
+  specMain.textContent = `${dims.weight.toFixed(2)} kg/m`;
+
+  lblDim1.textContent = dims.lbl1 || "Dim 1:";
+  lblDim2.textContent = dims.lbl2 || "Dim 2:";
+
+  specDim1.textContent = (dims.val1 !== undefined && dims.val1 !== null) ? `${dims.val1} mm` : "-";
+  if ((dims.lbl2 || "").toLowerCase().includes("area")){
+    specDim2.textContent = `${dims.val2} mm²`;
+  } else {
+    specDim2.textContent = (dims.val2 !== undefined && dims.val2 !== null) ? `${dims.val2} mm` : "-";
+  }
+}
+
+applyCustomBtn.addEventListener('click', () => {
+  if (sizeSelect.value === "__custom__") updateUI();
+});
+
+radios.forEach(r => r.addEventListener('change', () => {
+      const type = document.querySelector('input[name="fit-type"]:checked').value;
+      populateSizesForType(type);
+      updateUI();
+    }));
+    sizeSelect.addEventListener('change', updateUI);
+    // No extrusion-length selector; preview length is fixed.
+
+    // Init: populate based on default checked radio
+    populateSizesForType(document.querySelector('input[name="fit-type"]:checked').value);
+    updateUI();
+
+    function animate(){
+      requestAnimationFrame(animate);
+      controls.update();
+      renderer.render(scene, camera);
+    }
+    animate();
+
+    window.addEventListener('resize', () => {
+      camera.aspect = window.innerWidth / window.innerHeight;
+      camera.updateProjectionMatrix();
+      renderer.setSize(window.innerWidth, window.innerHeight);
+      if (currentMesh) frameObject(currentMesh);
+    });
+
+    // ============================================================
+    // STL DOWNLOAD
+    // ============================================================
+
+    document.getElementById('download-btn').addEventListener('click', () => {
+      if (!currentMesh || !currentType || !currentSpec) return;
+
+      const exporter = new STLExporter();
+      const result = exporter.parse(currentMesh, { binary: true });
+
+      const blob = new Blob([result], { type: 'application/octet-stream' });
+      const link = document.createElement('a');
+      link.href = URL.createObjectURL(blob);
+
+      const key = (currentSpec.key || "Profile").replace(/\s+/g, "_").replace(/[^A-Za-z0-9_\-]/g, "");
+      link.download = `Profile_${currentType}_${key}.stl`;
+      link.click();
+      URL.revokeObjectURL(link.href);
+    });
+
+    // ============================================================
+    // DXF EXPORT (R12 / AC1009)
+    // Single closed POLYLINE outlining the 2D profile in the XY plane.
+    // ============================================================
+
+    function dxfJoin(lines){ return lines.join("\n") + "\n"; }
+
+    function addLayerTable(lines, layerNames){
+      lines.push("0","SECTION","2","TABLES");
+      lines.push("0","TABLE","2","LAYER","70",String(layerNames.length));
+      for (const lname of layerNames){
+        lines.push("0","LAYER","2",lname,"70","0","62","7","6","CONTINUOUS");
+      }
+      lines.push("0","ENDTAB","0","ENDSEC");
+    }
+
+    function addClosedPolyline(lines, layer, pts){
+      // R12 POLYLINE with VERTEX list. 70=1 => closed polyline.
+      lines.push("0","POLYLINE");
+      lines.push("8", layer);
+      lines.push("66","1");
+      lines.push("10","0.0","20","0.0","30","0.0");
+      lines.push("70","1");
+
+      for (const p of pts){
+        lines.push("0","VERTEX");
+        lines.push("8", layer);
+        lines.push("10", String(p.x), "20", String(p.y), "30", "0.0");
+      }
+
+      lines.push("0","SEQEND");
+    }
+
+    function exportDXFProfile(outlinePts){
+      const layerProf = "PROFILE";
+
+      const lines = [];
+      lines.push("0","SECTION","2","HEADER","9","$ACADVER","1","AC1009","0","ENDSEC");
+      addLayerTable(lines, [layerProf]);
+
+      lines.push("0","SECTION","2","ENTITIES");
+      addClosedPolyline(lines, layerProf, outlinePts);
+      lines.push("0","ENDSEC","0","EOF");
+      return dxfJoin(lines);
+    }
+
+    document.getElementById('download-dxf-btn').addEventListener('click', () => {
+      if (!currentOutline || currentOutline.length < 3 || !currentType || !currentSpec) return;
+
+      const dxfContent = exportDXFProfile(currentOutline);
+
+      const blob = new Blob([dxfContent], { type: 'application/dxf' });
+      const link = document.createElement('a');
+      link.href = URL.createObjectURL(blob);
+
+      const key = (currentSpec.key || "Profile").replace(/\s+/g, "_").replace(/[^A-Za-z0-9_\-]/g, "");
+      link.download = `Profile_${currentType}_${key}_R12.dxf`;
+      link.click();
+      URL.revokeObjectURL(link.href);
+    });
+
+  </script>
+</body>
+</html>
