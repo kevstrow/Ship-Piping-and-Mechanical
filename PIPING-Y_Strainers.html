@@ -1,0 +1,973 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Y-Strainer Generator (Student / Light CAD)</title>
+  <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
+  <style>
+    body { margin: 0; overflow: hidden; background-color: #f3f4f6; }
+    #canvas-container { width: 100%; height: 100vh; display: block; }
+    .overlay { position: absolute; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; }
+    .panel { pointer-events: auto; }
+    ::-webkit-scrollbar { width: 8px; height: 8px; }
+    ::-webkit-scrollbar-track { background: #f1f1f1; }
+    ::-webkit-scrollbar-thumb { background: #888; border-radius: 4px; }
+    ::-webkit-scrollbar-thumb:hover { background: #555; }
+  </style>
+  <script type="importmap">
+    {
+      "imports": {
+        "three": "https://unpkg.com/three@0.160.0/build/three.module.js",
+        "three/addons/": "https://unpkg.com/three@0.160.0/examples/jsm/"
+      }
+    }
+  </script>
+</head>
+<body class="text-gray-800 font-sans">
+  <div id="canvas-container"></div>
+
+  <div class="overlay flex flex-col md:flex-row justify-between p-4 md:p-6 gap-4">
+    <div class="panel bg-white/90 backdrop-blur shadow-lg rounded-xl p-6 w-full md:w-96 flex flex-col gap-4 border border-gray-200 h-fit max-h-[90vh] overflow-y-auto">
+      <h1 class="text-2xl font-bold text-blue-700">Y-Strainer Generator</h1>
+      <p class="text-sm text-gray-500">Flanged Y-Strainer (Outside View) - 300LB</p>
+
+      <div>
+        <label class="block text-sm font-medium text-gray-700 mb-1">Select Size (NPS)</label>
+        <select id="size-select" class="w-full border border-gray-300 rounded-md p-2 focus:ring-2 focus:ring-blue-500 outline-none bg-white"></select>
+      </div>
+
+      <div class="bg-gray-50 rounded-lg p-3 border border-gray-200 text-sm">
+        <h3 class="font-semibold text-gray-700 border-b border-gray-200 pb-2 mb-2">Specs (From Provided Table)</h3>
+        <div class="grid grid-cols-2 gap-y-2 gap-x-4">
+          <span class="text-gray-500">Nominal Size:</span><span id="spec-size" class="font-medium text-right">-</span>
+          <span class="text-gray-500">DN:</span><span id="spec-dn" class="font-medium text-right">-</span>
+          <span class="text-gray-500">Face-to-Face (L):</span><span id="spec-l" class="font-medium text-right">-</span>
+          <span class="text-gray-500">Flange OD (D):</span><span id="spec-d" class="font-medium text-right">-</span>
+          <span class="text-gray-500">Branch Length (K):</span><span id="spec-k" class="font-medium text-right">-</span>
+          <span class="text-gray-500">Bolt Pattern (Z-⌀d):</span><span id="spec-z" class="font-medium text-right">-</span>
+          <span class="text-gray-500">Approx Weight:</span><span id="spec-weight" class="font-medium text-right">-</span>
+        </div>
+      </div>
+
+      <div class="bg-blue-50 rounded-lg p-3 border border-blue-100 text-sm">
+        <div class="flex justify-between items-center">
+          <span class="text-blue-800 font-semibold">Est. Cost:</span>
+          <span id="spec-cost" class="text-xl font-bold text-blue-700">-</span>
+        </div>
+        <p class="text-xs text-blue-400 mt-1">*Rough estimate only (teaching tool).</p>
+      </div>
+
+      <div class="pt-2 flex flex-col gap-2">
+        <button id="download-btn" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 px-4 rounded-lg transition shadow-md flex justify-center items-center gap-2 cursor-pointer">
+          <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+          </svg>
+          Download STL
+        </button>
+        <button id="download-dxf-btn" class="w-full bg-green-600 hover:bg-green-700 text-white font-bold py-3 px-4 rounded-lg transition shadow-md flex justify-center items-center gap-2 cursor-pointer">
+          <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+          </svg>
+          Download DXF
+        </button>
+      </div>
+    </div>
+
+    <div class="panel bg-white/80 backdrop-blur shadow-md rounded-lg p-3 h-fit self-end hidden md:block">
+      <p class="text-xs text-gray-500">
+        <strong>Left Click:</strong> Rotate <br>
+        <strong>Right Click:</strong> Pan <br>
+        <strong>Scroll:</strong> Zoom
+      </p>
+    </div>
+  </div>
+
+  <script type="module">
+    import * as THREE from 'three';
+    import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
+    import { STLExporter } from 'three/addons/exporters/STLExporter.js';
+
+    // --- Data Definitions (From the image/table you provided) ---
+    const strainerData = [
+        {
+                "size": "1/2",
+                "nps": 0.5,
+                "dn": 15,
+                "L": 152,
+                "L_rtj": 164,
+                "B": 13,
+                "D": 95,
+                "G": 35.1,
+                "K": 66.5,
+                "Z": "4-15.9",
+                "C": 14.2,
+                "Y": 51,
+                "P": 34.14,
+                "E": 5.56,
+                "F": 7.14,
+                "A": null,
+                "Q": null,
+                "weight": 0.5,
+                "cost": 307
+        },
+        {
+                "size": "3/4",
+                "nps": 0.75,
+                "dn": 20,
+                "L": 178,
+                "L_rtj": 191,
+                "B": 19,
+                "D": 117,
+                "G": 42.9,
+                "K": 82.6,
+                "Z": "4-19.1",
+                "C": 15.7,
+                "Y": 63.5,
+                "P": 42.88,
+                "E": 6.35,
+                "F": 8.74,
+                "A": null,
+                "Q": null,
+                "weight": 1.0,
+                "cost": 361
+        },
+        {
+                "size": "1",
+                "nps": 1,
+                "dn": 25,
+                "L": 203,
+                "L_rtj": 216,
+                "B": 25,
+                "D": 124,
+                "G": 50.8,
+                "K": 88.9,
+                "Z": "4-19.1",
+                "C": 17.5,
+                "Y": 70,
+                "P": 50.8,
+                "E": 6.35,
+                "F": 8.74,
+                "A": 35,
+                "Q": null,
+                "weight": 1.8,
+                "cost": 430
+        },
+        {
+                "size": "1-1/4",
+                "nps": 1.25,
+                "dn": 32,
+                "L": 216,
+                "L_rtj": 229,
+                "B": 32,
+                "D": 133,
+                "G": 63.5,
+                "K": 98.6,
+                "Z": "4-19.1",
+                "C": 19.1,
+                "Y": 79.5,
+                "P": 60.32,
+                "E": 6.35,
+                "F": 8.74,
+                "A": 45,
+                "Q": null,
+                "weight": 2.8,
+                "cost": 510
+        },
+        {
+                "size": "1-1/2",
+                "nps": 1.5,
+                "dn": 40,
+                "L": 229,
+                "L_rtj": 241,
+                "B": 38,
+                "D": 155,
+                "G": 73.2,
+                "K": 114.3,
+                "Z": "4-22.2",
+                "C": 20.6,
+                "Y": 90.5,
+                "P": 68.27,
+                "E": 6.35,
+                "F": 8.74,
+                "A": 52,
+                "Q": null,
+                "weight": 4.0,
+                "cost": 601
+        },
+        {
+                "size": "2",
+                "nps": 2,
+                "dn": 50,
+                "L": 267,
+                "L_rtj": 283,
+                "B": 49,
+                "D": 165,
+                "G": 91.9,
+                "K": 127,
+                "Z": "8-19.1",
+                "C": 22.4,
+                "Y": 108,
+                "P": 82.55,
+                "E": 7.92,
+                "F": 11.91,
+                "A": 63,
+                "Q": null,
+                "weight": 7.2,
+                "cost": 814
+        },
+        {
+                "size": "2-1/2",
+                "nps": 2.5,
+                "dn": 65,
+                "L": 292,
+                "L_rtj": 308,
+                "B": 62,
+                "D": 191,
+                "G": 104.6,
+                "K": 149.2,
+                "Z": "8-22.2",
+                "C": 25.4,
+                "Y": 127,
+                "P": 101.6,
+                "E": 7.92,
+                "F": 11.91,
+                "A": 75,
+                "Q": null,
+                "weight": 11.2,
+                "cost": 1066
+        },
+        {
+                "size": "3",
+                "nps": 3,
+                "dn": 80,
+                "L": 318,
+                "L_rtj": 333,
+                "B": 74,
+                "D": 210,
+                "G": 127,
+                "K": 168.3,
+                "Z": "8-22.2",
+                "C": 28.4,
+                "Y": 146,
+                "P": 123.82,
+                "E": 7.92,
+                "F": 11.91,
+                "A": 91,
+                "Q": null,
+                "weight": 16.2,
+                "cost": 1352
+        },
+        {
+                "size": "4",
+                "nps": 4,
+                "dn": 100,
+                "L": 356,
+                "L_rtj": 371,
+                "B": 100,
+                "D": 254,
+                "G": 157.2,
+                "K": 200.2,
+                "Z": "8-22.2",
+                "C": 31.8,
+                "Y": 175,
+                "P": 149.22,
+                "E": 7.92,
+                "F": 11.91,
+                "A": 117,
+                "Q": null,
+                "weight": 28.8,
+                "cost": 2022
+        },
+        {
+                "size": "6",
+                "nps": 6,
+                "dn": 150,
+                "L": 445,
+                "L_rtj": 460,
+                "B": 150,
+                "D": 318,
+                "G": 215.9,
+                "K": 269.8,
+                "Z": "12-22.2",
+                "C": 36.6,
+                "Y": 241,
+                "P": 211.12,
+                "E": 7.92,
+                "F": 11.91,
+                "A": 172,
+                "Q": null,
+                "weight": 64.8,
+                "cost": 3711
+        },
+        {
+                "size": "8",
+                "nps": 8,
+                "dn": 200,
+                "L": 533,
+                "L_rtj": 549,
+                "B": 201,
+                "D": 381,
+                "G": 269.7,
+                "K": 330.2,
+                "Z": "12-25.4",
+                "C": 41.1,
+                "Y": 302,
+                "P": 269.88,
+                "E": 7.92,
+                "F": 11.91,
+                "A": 223,
+                "Q": null,
+                "weight": 115.2,
+                "cost": 5813
+        },
+        {
+                "size": "10",
+                "nps": 10,
+                "dn": 250,
+                "L": 622,
+                "L_rtj": 638,
+                "B": 252,
+                "D": 445,
+                "G": 323.9,
+                "K": 387.4,
+                "Z": "16-28.6",
+                "C": 47.8,
+                "Y": 356,
+                "P": 323.85,
+                "E": 7.92,
+                "F": 11.91,
+                "A": 278,
+                "Q": null,
+                "weight": 180.0,
+                "cost": 8290
+        },
+        {
+                "size": "12",
+                "nps": 12,
+                "dn": 300,
+                "L": 711,
+                "L_rtj": 727,
+                "B": 303,
+                "D": 521,
+                "G": 381,
+                "K": 450.9,
+                "Z": "16-31.8",
+                "C": 50.8,
+                "Y": 413,
+                "P": 381,
+                "E": 7.92,
+                "F": 11.91,
+                "A": 329,
+                "Q": null,
+                "weight": 259.2,
+                "cost": 11112
+        },
+        {
+                "size": "14",
+                "nps": 14,
+                "dn": 350,
+                "L": 838,
+                "L_rtj": 854,
+                "B": 334,
+                "D": 584,
+                "G": 412.8,
+                "K": 514.4,
+                "Z": "20-31.8",
+                "C": 53.8,
+                "Y": 457,
+                "P": 419.1,
+                "E": 7.92,
+                "F": 11.91,
+                "A": 362,
+                "Q": null,
+                "weight": 352.8,
+                "cost": 14258
+        },
+        {
+                "size": "16",
+                "nps": 16,
+                "dn": 400,
+                "L": 864,
+                "L_rtj": 879,
+                "B": 385,
+                "D": 648,
+                "G": 469.9,
+                "K": 571.5,
+                "Z": "20-34.9",
+                "C": 57.2,
+                "Y": 508,
+                "P": 469.9,
+                "E": 7.92,
+                "F": 11.91,
+                "A": 413,
+                "Q": null,
+                "weight": 460.8,
+                "cost": 17711
+        },
+        {
+                "size": "18",
+                "nps": 18,
+                "dn": 450,
+                "L": 978,
+                "L_rtj": 994,
+                "B": 436,
+                "D": 711,
+                "G": 533.4,
+                "K": 628.7,
+                "Z": "24-34.9",
+                "C": 60.5,
+                "Y": 575,
+                "P": 533.4,
+                "E": 7.92,
+                "F": 11.91,
+                "A": 464,
+                "Q": null,
+                "weight": 583.2,
+                "cost": 21456
+        },
+        {
+                "size": "20",
+                "nps": 20,
+                "dn": 500,
+                "L": 1016,
+                "L_rtj": 1035,
+                "B": 487,
+                "D": 775,
+                "G": 584.2,
+                "K": 685.8,
+                "Z": "24-34.9",
+                "C": 63.5,
+                "Y": 635,
+                "P": 584.2,
+                "E": 9.52,
+                "F": 13.49,
+                "A": 516,
+                "Q": null,
+                "weight": 720.0,
+                "cost": 25483
+        },
+        {
+                "size": "24",
+                "nps": 24,
+                "dn": 600,
+                "L": 1346,
+                "L_rtj": 1368,
+                "B": 589,
+                "D": 914,
+                "G": 692.2,
+                "K": 812.8,
+                "Z": "24-41.3",
+                "C": 69.9,
+                "Y": 749,
+                "P": 692.15,
+                "E": 11.13,
+                "F": 16.66,
+                "A": 619,
+                "Q": null,
+                "weight": 1036.8,
+                "cost": 34339
+        },
+        {
+                "size": "26",
+                "nps": 26,
+                "dn": 650,
+                "L": 1346,
+                "L_rtj": 1372,
+                "B": 633,
+                "D": 972,
+                "G": 749.3,
+                "K": 876.3,
+                "Z": "28-44.5",
+                "C": 79.2,
+                "Y": 809.8,
+                "P": 749.3,
+                "E": 12.7,
+                "F": 19.84,
+                "A": 670,
+                "Q": null,
+                "weight": 1216.8,
+                "cost": 39152
+        },
+        {
+                "size": "28",
+                "nps": 28,
+                "dn": 700,
+                "L": 1499,
+                "L_rtj": 1524,
+                "B": 684,
+                "D": 1035,
+                "G": 800.1,
+                "K": 939.8,
+                "Z": "28-44.5",
+                "C": 85.9,
+                "Y": 860.6,
+                "P": 800.1,
+                "E": 12.7,
+                "F": 19.84,
+                "A": 721,
+                "Q": null,
+                "weight": 1411.2,
+                "cost": 44212
+        },
+        {
+                "size": "30",
+                "nps": 30,
+                "dn": 750,
+                "L": 1594,
+                "L_rtj": 1619,
+                "B": 735,
+                "D": 1092,
+                "G": 857.3,
+                "K": 997,
+                "Z": "28-47.6",
+                "C": 91.9,
+                "Y": 917.4,
+                "P": 857.25,
+                "E": 12.7,
+                "F": 19.84,
+                "A": 772,
+                "Q": null,
+                "weight": 1620.0,
+                "cost": 49513
+        },
+        {
+                "size": "36",
+                "nps": 36,
+                "dn": 900,
+                "L": 2083,
+                "L_rtj": 2112,
+                "B": 874,
+                "D": 1270,
+                "G": 1022.4,
+                "K": 1168.4,
+                "Z": "32-54",
+                "C": 104.6,
+                "Y": 1092.2,
+                "P": 1022.35,
+                "E": 23.01,
+                "F": null,
+                "A": null,
+                "Q": null,
+                "weight": 2332.8,
+                "cost": 60000
+        }
+];
+
+    // Student / Light-CAD geometry tuning
+    const GEO = {
+      mainRadial: 28,
+      smallRadial: 14,
+    };
+
+    // --- Scene Setup ---
+    const container = document.getElementById('canvas-container');
+    const scene = new THREE.Scene();
+    scene.background = new THREE.Color(0xf3f4f6);
+
+    const camera = new THREE.PerspectiveCamera(45, window.innerWidth / window.innerHeight, 0.1, 50000);
+    camera.position.set(400, 400, 500);
+
+    const renderer = new THREE.WebGLRenderer({ antialias: true });
+    renderer.setSize(window.innerWidth, window.innerHeight);
+    renderer.shadowMap.enabled = true;
+    renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+    container.appendChild(renderer.domElement);
+
+    const controls = new OrbitControls(camera, renderer.domElement);
+    controls.enableDamping = true;
+
+    // --- Lighting ---
+    scene.add(new THREE.AmbientLight(0xffffff, 0.75));
+    const dirLight = new THREE.DirectionalLight(0xffffff, 1.1);
+    dirLight.position.set(120, 220, 140);
+    dirLight.castShadow = true;
+    dirLight.shadow.mapSize.width = 1024;
+    dirLight.shadow.mapSize.height = 1024;
+    scene.add(dirLight);
+
+    const backLight = new THREE.DirectionalLight(0xbadfff, 0.5);
+    backLight.position.set(-120, 80, -120);
+    scene.add(backLight);
+
+    // --- Materials ---
+    const materialBody = new THREE.MeshStandardMaterial({
+      color: 0x4b5563, metalness: 0.35, roughness: 0.55
+    });
+    const materialCover = new THREE.MeshStandardMaterial({
+      color: 0x6b7280, metalness: 0.30, roughness: 0.60
+    });
+    const materialMetal = new THREE.MeshStandardMaterial({
+      color: 0x9ca3af, metalness: 0.8, roughness: 0.25
+    });
+    const materialFlange = new THREE.MeshStandardMaterial({
+      color: 0x374151, metalness: 0.45, roughness: 0.45
+    });
+
+    // --- Helpers ---
+    let currentGroup = null;
+
+    function disposeGroup(group) {
+      if (!group) return;
+      group.traverse((child) => {
+        if (child.isMesh) child.geometry.dispose();
+      });
+    }
+
+    function frameObjectToView(object3d, {
+      padding = 1.25,
+      minNear = 0.1,
+      farMultiplier = 4.0,
+    } = {}) {
+      const box = new THREE.Box3().setFromObject(object3d);
+      if (box.isEmpty()) return;
+
+      const size = new THREE.Vector3();
+      const center = new THREE.Vector3();
+      box.getSize(size);
+      box.getCenter(center);
+
+      const maxDim = Math.max(size.x, size.y, size.z) * padding;
+
+      const fov = THREE.MathUtils.degToRad(camera.fov);
+      const fitHeightDist = (maxDim / 2) / Math.tan(fov / 2);
+      const fitWidthDist = fitHeightDist / camera.aspect;
+      const distance = Math.max(fitHeightDist, fitWidthDist);
+
+      const dir = new THREE.Vector3().subVectors(camera.position, controls.target).normalize();
+      camera.position.copy(center).add(dir.multiplyScalar(distance));
+      camera.near = Math.max(minNear, distance / 120);
+      camera.far = distance * farMultiplier;
+      camera.updateProjectionMatrix();
+
+      controls.target.copy(center);
+      controls.update();
+    }
+
+    function parseBoltPattern(zStr) {
+      // Expected like "12-22.2" meaning 12 holes, Ø22.2
+      if (!zStr || typeof zStr !== 'string') return { count: 0, holeDia: 0 };
+      const m = zStr.match(/(\d+)\s*[-—]\s*(\d+(?:\.\d+)?)/);
+      if (!m) return { count: 0, holeDia: 0 };
+      return { count: parseInt(m[1], 10), holeDia: parseFloat(m[2]) };
+    }
+
+    // --- Y-Strainer Generation (outside view only) ---
+    function createStrainer(specs) {
+      if (currentGroup) {
+        scene.remove(currentGroup);
+        disposeGroup(currentGroup);
+        currentGroup = null;
+      }
+
+      const group = new THREE.Group();
+
+      const npsMm = specs.nps * 25.4;
+      const L = specs.L;                  // Face-to-face
+      const flangeDia = specs.D;          // Flange OD
+      const flangeRadius = flangeDia / 2;
+
+      const flangeThickness = Math.max(12, Math.min(40, flangeDia * 0.08));
+      const runRadius = Math.max(10, npsMm * 0.55);
+
+      // Main run (pipe barrel)
+      const barrelLen = Math.max(10, L - 2 * flangeThickness);
+      const barrelGeo = new THREE.CylinderGeometry(runRadius, runRadius, barrelLen, GEO.mainRadial);
+      barrelGeo.rotateZ(Math.PI / 2);
+      const barrelMesh = new THREE.Mesh(barrelGeo, materialBody);
+      barrelMesh.castShadow = true;
+      barrelMesh.receiveShadow = true;
+      group.add(barrelMesh);
+
+      // Central "bulge" where basket/screen would be (outside only)
+      const bulgeR = runRadius * 1.55;
+      const bulgeGeo = new THREE.SphereGeometry(bulgeR, 28, 22);
+      bulgeGeo.scale(1.15, 1.0, 1.0);
+      const bulgeMesh = new THREE.Mesh(bulgeGeo, materialBody);
+      bulgeMesh.castShadow = true;
+      bulgeMesh.receiveShadow = true;
+      group.add(bulgeMesh);
+
+      // Flanges (ends)
+      const fGeom = new THREE.CylinderGeometry(flangeRadius, flangeRadius, flangeThickness, GEO.mainRadial);
+      fGeom.rotateZ(Math.PI / 2);
+
+      const fPos = (L / 2) - (flangeThickness / 2);
+
+      const fLeft = new THREE.Mesh(fGeom, materialFlange);
+      fLeft.position.x = -fPos;
+      fLeft.castShadow = true;
+      group.add(fLeft);
+
+      const fRight = new THREE.Mesh(fGeom, materialFlange);
+      fRight.position.x = fPos;
+      fRight.castShadow = true;
+      group.add(fRight);
+
+      // Bolts (visual only, based on Z-⌀d)
+      const { count: boltCount, holeDia } = parseBoltPattern(specs.Z);
+      const boltCircle = flangeRadius * 0.78;
+      const boltRad = Math.max(5, Math.min(18, (holeDia || 20) * 0.35));
+      const boltLen = flangeThickness * 1.10;
+
+      for (let i = 0; i < boltCount; i++) {
+        const a = (i / boltCount) * Math.PI * 2;
+        const by = Math.sin(a) * boltCircle;
+        const bz = Math.cos(a) * boltCircle;
+
+        const bGeo = new THREE.CylinderGeometry(boltRad, boltRad, boltLen, GEO.smallRadial);
+        bGeo.rotateZ(Math.PI / 2);
+
+        const bL = new THREE.Mesh(bGeo, materialMetal);
+        bL.position.set(-fPos, by, bz);
+        group.add(bL);
+
+        const bR = new THREE.Mesh(bGeo, materialMetal);
+        bR.position.set(fPos, by, bz);
+        group.add(bR);
+      }
+
+      // Y branch (strainer leg) - 45° down from the run
+      const branchAngle = -Math.PI / 4;
+      const branchRadius = runRadius * 0.88;
+      const branchLen = Math.max(runRadius * 2.2, (specs.K || (npsMm * 3.0)) * 0.70);
+
+      // KevStrow request: omit the branch end disc/cover (outside-only),
+      // and instead extend the branch by the disc thickness so the overall
+      // envelope stays the same but avoids a misplaced "floating" cap.
+      const capThk = Math.max(10, branchRadius * 0.35);
+      const branchLenEff = branchLen + capThk;
+
+      const branchGeo = new THREE.CylinderGeometry(branchRadius, branchRadius * 1.05, branchLenEff, GEO.mainRadial);
+      const branchMesh = new THREE.Mesh(branchGeo, materialBody);
+      branchMesh.castShadow = true;
+      branchMesh.receiveShadow = true;
+
+      // Position & rotate branch
+      branchMesh.rotation.z = branchAngle;
+      // Move so it intersects the bulge
+      const attachX = -L * 0.08;
+      const attachY = -runRadius * 0.35;
+      branchMesh.position.set(attachX, attachY, 0);
+
+      // Offset along its own axis so the top intersects the body
+      const dx = Math.cos(branchAngle) * (branchLenEff / 2);
+      const dy = Math.sin(branchAngle) * (branchLenEff / 2);
+      branchMesh.position.x += dx;
+      branchMesh.position.y += dy;
+
+      group.add(branchMesh);
+
+      // Small drain plug at low point (teaching/visual cue)
+      const plugR = Math.max(3, runRadius * 0.12);
+      const plugL = plugR * 3.0;
+      const plugGeo = new THREE.CylinderGeometry(plugR, plugR, plugL, 10);
+      const plugMesh = new THREE.Mesh(plugGeo, materialMetal);
+      plugMesh.rotation.z = -Math.PI / 2;
+      plugMesh.position.set(0, -bulgeR * 0.95, 0);
+      group.add(plugMesh);
+
+      // Flow arrow on the body
+      const arrowLen = Math.max(40, L * 0.18);
+      const arrowW = Math.max(6, runRadius * 0.22);
+      const arrowShape = new THREE.Shape();
+      arrowShape.moveTo(0, arrowW/2);
+      arrowShape.lineTo(arrowLen - arrowW, arrowW/2);
+      arrowShape.lineTo(arrowLen - arrowW, arrowW);
+      arrowShape.lineTo(arrowLen, 0);
+      arrowShape.lineTo(arrowLen - arrowW, -arrowW);
+      arrowShape.lineTo(arrowLen - arrowW, -arrowW/2);
+      arrowShape.lineTo(0, -arrowW/2);
+      arrowShape.lineTo(0, arrowW/2);
+
+      const arrowExtrude = new THREE.ExtrudeGeometry(arrowShape, { depth: 4, bevelEnabled: false });
+      const arrowMesh = new THREE.Mesh(arrowExtrude, materialMetal);
+      arrowMesh.position.set(-arrowLen/2, 0, bulgeR + 2);
+      group.add(arrowMesh);
+
+      scene.add(group);
+      currentGroup = group;
+      frameObjectToView(group, { padding: 1.30 });
+    }
+
+    // --- UI Logic ---
+    const selectEl = document.getElementById('size-select');
+    const specSizeEl = document.getElementById('spec-size');
+    const specDnEl = document.getElementById('spec-dn');
+    const specLEl = document.getElementById('spec-l');
+    const specDEl = document.getElementById('spec-d');
+    const specKEl = document.getElementById('spec-k');
+    const specZEl = document.getElementById('spec-z');
+    const specWeightEl = document.getElementById('spec-weight');
+    const specCostEl = document.getElementById('spec-cost');
+
+    strainerData.forEach(item => {
+      const option = document.createElement('option');
+      option.value = item.size;
+      option.textContent = `${item.size}" (DN${item.dn})`;
+      selectEl.appendChild(option);
+    });
+
+    function findSpecsBySize(sizeValue) {
+      return strainerData.find(s => String(s.size) === String(sizeValue));
+    }
+
+    function updateSelection() {
+      const sizeValue = selectEl.value;
+      const specs = findSpecsBySize(sizeValue);
+      if (!specs) return;
+
+      specSizeEl.textContent = `${specs.size}"`;
+      specDnEl.textContent = `DN${specs.dn}`;
+      specLEl.textContent = `${specs.L} mm`;
+      specDEl.textContent = `${specs.D} mm`;
+      specKEl.textContent = `${specs.K} mm`;
+      specZEl.textContent = `${specs.Z}`;
+      specWeightEl.textContent = `${specs.weight} kg`;
+      specCostEl.textContent = `$${Number(specs.cost).toLocaleString()}`;
+
+      createStrainer(specs);
+    }
+
+    selectEl.addEventListener('change', updateSelection);
+
+    // Initialize (default to 6")
+    selectEl.value = "6";
+    updateSelection();
+
+    // --- Animation Loop ---
+    function animate() {
+      requestAnimationFrame(animate);
+      controls.update();
+      renderer.render(scene, camera);
+    }
+    animate();
+
+    // --- Window Resize ---
+    window.addEventListener('resize', () => {
+      camera.aspect = window.innerWidth / window.innerHeight;
+      camera.updateProjectionMatrix();
+      renderer.setSize(window.innerWidth, window.innerHeight);
+      if (currentGroup) frameObjectToView(currentGroup, { padding: 1.30 });
+    });
+
+    // --- DXF Export (Polyface Mesh) ---
+    function sanitizeName(s) {
+      return String(s).replace(/[^A-Za-z0-9_\-]/g, "_");
+    }
+
+    function exportDXFPolyface(object) {
+      const layerName = "Y_STRAINER";
+      const sizeValue = String(document.getElementById('size-select')?.value ?? '').trim();
+      const blockName = `Y_STRAINER_NPS${sanitizeName(sizeValue)}`;
+
+      const verts = [];
+      const faces = [];
+      const vmap = new Map();
+      const v = new THREE.Vector3();
+
+      const keyOf = (x, y, z) => `${x.toFixed(4)},${y.toFixed(4)},${z.toFixed(4)}`;
+
+      const addVertex = (vx, vy, vz) => {
+        const k = keyOf(vx, vy, vz);
+        const existing = vmap.get(k);
+        if (existing !== undefined) return existing;
+        const id = verts.length + 1;
+        vmap.set(k, id);
+        verts.push({ x: vx, y: vy, z: vz });
+        return id;
+      };
+
+      const addTri = (pos, a, b, c, mw) => {
+        v.fromBufferAttribute(pos, a).applyMatrix4(mw);
+        const ia = addVertex(v.x, v.y, v.z);
+        v.fromBufferAttribute(pos, b).applyMatrix4(mw);
+        const ib = addVertex(v.x, v.y, v.z);
+        v.fromBufferAttribute(pos, c).applyMatrix4(mw);
+        const ic = addVertex(v.x, v.y, v.z);
+        faces.push([ia, ib, ic]);
+      };
+
+      object.traverse((child) => {
+        if (!child.isMesh) return;
+        const geom = child.geometry;
+        const pos = geom.attributes.position;
+        if (!pos) return;
+        const idx = geom.index;
+        const mw = child.matrixWorld;
+
+        if (idx) {
+          for (let i = 0; i < idx.count; i += 3) {
+            addTri(pos, idx.getX(i), idx.getX(i + 1), idx.getX(i + 2), mw);
+          }
+        } else {
+          for (let i = 0; i < pos.count; i += 3) {
+            addTri(pos, i, i + 1, i + 2, mw);
+          }
+        }
+      });
+
+      let dxf = "0\nSECTION\n2\nHEADER\n9\n$ACADVER\n1\nAC1009\n0\nENDSEC\n";
+
+      dxf += "0\nSECTION\n2\nTABLES\n";
+      dxf += "0\nTABLE\n2\nLAYER\n70\n1\n";
+      dxf += `0\nLAYER\n2\n${layerName}\n70\n0\n62\n7\n6\nCONTINUOUS\n`;
+      dxf += "0\nENDTAB\n0\nENDSEC\n";
+
+      dxf += "0\nSECTION\n2\nBLOCKS\n";
+      dxf += `0\nBLOCK\n8\n${layerName}\n2\n${blockName}\n70\n0\n10\n0.0\n20\n0.0\n30\n0.0\n3\n${blockName}\n1\n\n`;
+
+      dxf += `0\nPOLYLINE\n8\n${layerName}\n66\n1\n70\n64\n10\n0\n20\n0\n30\n0\n`;
+
+      for (const p of verts) {
+        dxf += `0\nVERTEX\n8\n${layerName}\n10\n${p.x}\n20\n${p.y}\n30\n${p.z}\n70\n192\n`;
+      }
+
+      for (const f of faces) {
+        dxf += `0\nVERTEX\n8\n${layerName}\n10\n0\n20\n0\n30\n0\n70\n128\n71\n${f[0]}\n72\n${f[1]}\n73\n${f[2]}\n74\n${f[2]}\n`;
+      }
+
+      dxf += `0\nSEQEND\n8\n${layerName}\n`;
+      dxf += "0\nENDBLK\n0\nENDSEC\n";
+
+      dxf += "0\nSECTION\n2\nENTITIES\n";
+      dxf += `0\nINSERT\n8\n${layerName}\n2\n${blockName}\n10\n0.0\n20\n0.0\n30\n0.0\n`;
+      dxf += "0\nENDSEC\n0\nEOF";
+
+      return dxf;
+    }
+
+    // --- Download Logic ---
+    document.getElementById('download-btn').addEventListener('click', () => {
+      const exporter = new STLExporter();
+      const result = exporter.parse(currentGroup, { binary: true });
+      const sizeValue = selectEl.value;
+      const blob = new Blob([result], { type: 'application/octet-stream' });
+
+      const link = document.createElement('a');
+      link.style.display = 'none';
+      document.body.appendChild(link);
+      link.href = URL.createObjectURL(blob);
+      link.download = `YStrainer_${sanitizeName(sizeValue)}_300LB.stl`;
+      link.click();
+      document.body.removeChild(link);
+    });
+
+    document.getElementById('download-dxf-btn').addEventListener('click', () => {
+      currentGroup.updateMatrixWorld(true);
+      const dxfContent = exportDXFPolyface(currentGroup);
+
+      const sizeValue = selectEl.value;
+      const blob = new Blob([dxfContent], { type: 'application/dxf' });
+
+      const link = document.createElement('a');
+      link.style.display = 'none';
+      document.body.appendChild(link);
+      link.href = URL.createObjectURL(blob);
+      link.download = `YStrainer_${sanitizeName(sizeValue)}_300LB_POLYFACE.dxf`;
+      link.click();
+      document.body.removeChild(link);
+    });
+  </script>
+</body>
+</html>

@@ -1,0 +1,2224 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>ASTM Valve Generators (Tabs)</title>
+  <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
+  <style>
+    body { margin: 0; overflow: hidden; background-color: #f3f4f6; }
+    #canvas-container { width: 100%; height: 100vh; display: block; }
+    .overlay { position: absolute; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; }
+    .panel { pointer-events: auto; }
+    ::-webkit-scrollbar { width: 8px; height: 8px; }
+    ::-webkit-scrollbar-track { background: #f1f1f1; }
+    ::-webkit-scrollbar-thumb { background: #888; border-radius: 4px; }
+    ::-webkit-scrollbar-thumb:hover { background: #555; }
+  </style>
+  <script type="importmap">
+    {
+      "imports": {
+        "three": "https://unpkg.com/three@0.160.0/build/three.module.js",
+        "three/addons/": "https://unpkg.com/three@0.160.0/examples/jsm/"
+      }
+    }
+  </script>
+</head>
+
+<body class="text-gray-800 font-sans">
+
+  <div id="canvas-container"></div>
+
+  <div class="overlay flex flex-col md:flex-row justify-between p-4 md:p-6 gap-4">
+
+    <!-- LEFT COLUMN (tabs + panels) -->
+    <div class="w-full md:w-96 flex flex-col gap-3">
+      <!-- Tabs -->
+      <div class="panel bg-white/90 backdrop-blur shadow-md rounded-xl border border-gray-200 p-2 flex gap-2">
+        <button id="tab-butterfly"
+          class="flex-1 py-2 rounded-lg text-sm font-semibold transition border border-transparent bg-blue-600 text-white">
+          Butterfly Valve
+        </button>
+        <button id="tab-check"
+          class="flex-1 py-2 rounded-lg text-sm font-semibold transition border border-gray-200 bg-white hover:bg-gray-50 text-gray-700">
+          Check Valve
+        </button>
+
+        <button id="tab-gate"
+          class="flex-1 py-2 rounded-lg text-sm font-semibold transition border border-gray-200 bg-white hover:bg-gray-50 text-gray-700">
+          Gate Valve
+        </button>
+
+        <button id="tab-globe"
+          class="flex-1 py-2 rounded-lg text-sm font-semibold transition border border-gray-200 bg-white hover:bg-gray-50 text-gray-700">
+          Globe Valve
+        </button>
+
+      </div>
+
+      <!-- BUTTERFLY PANEL (layout kept same; only IDs prefixed) -->
+      <div id="panel-butterfly" class="panel bg-white/90 backdrop-blur shadow-lg rounded-xl p-6 w-full flex flex-col gap-4 border border-gray-200 h-fit max-h-[90vh] overflow-y-auto">
+        <h1 class="text-2xl font-bold text-blue-700">Butterfly Valve Gen</h1>
+        <p class="text-sm text-gray-500">Student / Light-CAD models (dimensionally correct)</p>
+
+        <!-- Valve Size Selection -->
+        <div>
+          <label class="block text-sm font-medium text-gray-700 mb-1">Select Size (NPS)</label>
+          <select id="bf-size-select" class="w-full border border-gray-300 rounded-md p-2 focus:ring-2 focus:ring-blue-500 outline-none bg-white"></select>
+        </div>
+
+        <!-- Operator Type Selection -->
+        <div>
+          <label class="block text-sm font-medium text-gray-700 mb-2">Operator Type</label>
+          <p class="text-xs text-gray-400 mb-2">Auto-selects based on size. </p>
+          <div class="grid grid-cols-3 gap-2">
+            <label class="flex items-center gap-2 p-2 border border-gray-200 rounded-lg cursor-pointer hover:bg-gray-50 has-[:checked]:bg-blue-50 has-[:checked]:border-blue-400">
+              <input type="radio" name="bf-operator" value="handle" class="accent-blue-600" checked>
+              <span class="text-sm">Lever</span>
+            </label>
+            <label class="flex items-center gap-2 p-2 border border-gray-200 rounded-lg cursor-pointer hover:bg-gray-50 has-[:checked]:bg-blue-50 has-[:checked]:border-blue-400">
+              <input type="radio" name="bf-operator" value="handwheel" class="accent-blue-600">
+              <span class="text-sm">Gearbox</span>
+            </label>
+            <label class="flex items-center gap-2 p-2 border border-gray-200 rounded-lg cursor-pointer hover:bg-gray-50 has-[:checked]:bg-blue-50 has-[:checked]:border-blue-400">
+              <input type="radio" name="bf-operator" value="actuator" class="accent-blue-600">
+              <span class="text-sm">Actuator</span>
+            </label>
+          </div>
+        </div>
+
+        <!-- Dimensions Table -->
+        <div class="bg-gray-50 rounded-lg p-3 border border-gray-200 text-sm">
+          <h3 class="font-semibold text-gray-700 border-b border-gray-200 pb-2 mb-2">Specs (ASTM A126 / API 609)</h3>
+          <div class="grid grid-cols-2 gap-y-2 gap-x-4">
+            <span class="text-gray-500">Nominal Size:</span>
+            <span id="bf-spec-size" class="font-medium text-right">-</span>
+
+            <span class="text-gray-500">Outer Diameter (OD):</span>
+            <span id="bf-spec-od" class="font-medium text-right">-</span>
+
+            <span class="text-gray-500">Face-to-Face (W):</span>
+            <span id="bf-spec-width" class="font-medium text-right">-</span>
+
+            <span class="text-gray-500">Approx Weight:</span>
+            <span id="bf-spec-weight" class="font-medium text-right">-</span>
+
+            <span class="text-gray-500">Operator:</span>
+            <span id="bf-spec-operator" class="font-medium text-right">-</span>
+
+            <span class="text-gray-500">Material:</span>
+            <span class="font-medium text-right">Cast Iron / Steel</span>
+          </div>
+        </div>
+
+        <!-- Cost Estimation -->
+        <div class="bg-blue-50 rounded-lg p-3 border border-blue-100 text-sm">
+          <div class="flex justify-between items-center">
+            <span class="text-blue-800 font-semibold">Est. Cost:</span>
+            <span id="bf-spec-cost" class="text-xl font-bold text-blue-700">-</span>
+          </div>
+          <p class="text-xs text-blue-400 mt-1">*Approximation based on market averages.</p>
+        </div>
+
+        <!-- Actions -->
+        <div class="pt-2 flex flex-col gap-2">
+          <button id="bf-download-btn" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 px-4 rounded-lg transition shadow-md flex justify-center items-center gap-2 cursor-pointer">
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+            </svg>
+            Download STL
+          </button>
+          <button id="bf-download-dxf-btn" class="w-full bg-green-600 hover:bg-green-700 text-white font-bold py-3 px-4 rounded-lg transition shadow-md flex justify-center items-center gap-2 cursor-pointer">
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+            </svg>
+            Download DXF
+          </button>
+        </div>
+      </div>
+
+      <!-- CHECK PANEL (layout kept same; only IDs prefixed) -->
+      <div id="panel-check" class="panel bg-white/90 backdrop-blur shadow-lg rounded-xl p-6 w-full flex flex-col gap-4 border border-gray-200 h-fit max-h-[90vh] overflow-y-auto hidden">
+        <h1 class="text-2xl font-bold text-blue-700">Check Valve Generator</h1>
+        <p class="text-sm text-gray-500">Non-Return Valve (Swing Type) - Class 300</p>
+
+        <!-- Valve Size Selection -->
+        <div>
+          <label class="block text-sm font-medium text-gray-700 mb-1">Select Size (NPS)</label>
+          <select id="cv-size-select" class="w-full border border-gray-300 rounded-md p-2 focus:ring-2 focus:ring-blue-500 outline-none bg-white"></select>
+        </div>
+
+        <!-- Dimensions Table -->
+        <div class="bg-gray-50 rounded-lg p-3 border border-gray-200 text-sm">
+          <h3 class="font-semibold text-gray-700 border-b border-gray-200 pb-2 mb-2">Specs (ASTM A216 / API 600)</h3>
+          <div class="grid grid-cols-2 gap-y-2 gap-x-4">
+            <span class="text-gray-500">Nominal Size:</span>
+            <span id="cv-spec-size" class="font-medium text-right">-</span>
+
+            <span class="text-gray-500">Flange Diameter:</span>
+            <span id="cv-spec-od" class="font-medium text-right">-</span>
+
+            <span class="text-gray-500">Face-to-Face:</span>
+            <span id="cv-spec-width" class="font-medium text-right">-</span>
+
+            <span class="text-gray-500">Approx Weight:</span>
+            <span id="cv-spec-weight" class="font-medium text-right">-</span>
+
+            <span class="text-gray-500">Type:</span>
+            <span class="font-medium text-right">Swing Check</span>
+
+            <span class="text-gray-500">Material:</span>
+            <span class="font-medium text-right">Cast Steel</span>
+          </div>
+        </div>
+
+        <!-- Cost Estimation -->
+        <div class="bg-blue-50 rounded-lg p-3 border border-blue-100 text-sm">
+          <div class="flex justify-between items-center">
+            <span class="text-blue-800 font-semibold">Est. Cost:</span>
+            <span id="cv-spec-cost" class="text-xl font-bold text-blue-700">-</span>
+          </div>
+          <p class="text-xs text-blue-400 mt-1">*Approximation based on market averages.</p>
+        </div>
+
+        <!-- Actions -->
+        <div class="pt-2 flex flex-col gap-2">
+          <button id="cv-download-btn" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 px-4 rounded-lg transition shadow-md flex justify-center items-center gap-2 cursor-pointer">
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+            </svg>
+            Download STL
+          </button>
+          <button id="cv-download-dxf-btn" class="w-full bg-green-600 hover:bg-green-700 text-white font-bold py-3 px-4 rounded-lg transition shadow-md flex justify-center items-center gap-2 cursor-pointer">
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+            </svg>
+            Download DXF
+          </button>
+        </div>
+      
+            </div>
+
+<!-- GATE PANEL (layout kept same; only IDs prefixed) -->
+      <div id="panel-gate" class="panel bg-white/90 backdrop-blur shadow-lg rounded-xl p-6 w-full flex flex-col gap-4 border border-gray-200 h-fit max-h-[90vh] overflow-y-auto hidden">
+        <h1 class="text-2xl font-bold text-blue-700">Gate Valve Generator</h1>
+        <p class="text-sm text-gray-500">Student / Light-CAD models (dimensionally correct)</p>
+
+        <!-- Valve Size Selection -->
+        <div>
+          <label class="block text-sm font-medium text-gray-700 mb-1">Select Size (NPS)</label>
+          <select id="gv-size-select" class="w-full border border-gray-300 rounded-md p-2 focus:ring-2 focus:ring-blue-500 outline-none bg-white"></select>
+        </div>
+
+        <!-- Operator Type Selection -->
+        <div>
+          <label class="block text-sm font-medium text-gray-700 mb-2">Operator Type</label>
+          <p class="text-xs text-gray-400 mb-2">Auto-selects based on size.</p>
+          <div class="grid grid-cols-2 gap-2">
+            <label class="flex items-center gap-2 p-2 border border-gray-200 rounded-lg cursor-pointer hover:bg-gray-50 has-[:checked]:bg-blue-50 has-[:checked]:border-blue-400">
+              <input type="radio" name="gv-operator" value="handwheel" class="accent-blue-600" checked>
+              <span class="text-sm">Handwheel</span>
+            </label>
+            <label class="flex items-center gap-2 p-2 border border-gray-200 rounded-lg cursor-pointer hover:bg-gray-50 has-[:checked]:bg-blue-50 has-[:checked]:border-blue-400">
+              <input type="radio" name="gv-operator" value="actuator" class="accent-blue-600">
+              <span class="text-sm">Actuator</span>
+            </label>
+          </div>
+        </div>
+
+        <!-- Stem Type Selection -->
+        <div>
+          <label class="block text-sm font-medium text-gray-700 mb-2">Stem Type</label>
+          <div class="grid grid-cols-2 gap-2">
+            <label class="flex items-center gap-2 p-2 border border-gray-200 rounded-lg cursor-pointer hover:bg-gray-50 has-[:checked]:bg-blue-50 has-[:checked]:border-blue-400">
+              <input type="radio" name="gv-stem" value="rising" class="accent-blue-600" checked>
+              <span class="text-sm">Rising</span>
+            </label>
+            <label class="flex items-center gap-2 p-2 border border-gray-200 rounded-lg cursor-pointer hover:bg-gray-50 has-[:checked]:bg-blue-50 has-[:checked]:border-blue-400">
+              <input type="radio" name="gv-stem" value="nonrising" class="accent-blue-600">
+              <span class="text-sm">Non-Rising</span>
+            </label>
+          </div>
+        </div>
+
+        <!-- Dimensions Table -->
+        <div class="bg-gray-50 rounded-lg p-3 border border-gray-200 text-sm">
+          <h3 class="font-semibold text-gray-700 border-b border-gray-200 pb-2 mb-2">Specs (ASTM A216 / API 600)</h3>
+          <div class="grid grid-cols-2 gap-y-2 gap-x-4">
+            <span class="text-gray-500">Nominal Size:</span>
+            <span id="gv-spec-size" class="font-medium text-right">-</span>
+
+            <span class="text-gray-500">Body Diameter:</span>
+            <span id="gv-spec-od" class="font-medium text-right">-</span>
+
+            <span class="text-gray-500">Face-to-Face:</span>
+            <span id="gv-spec-width" class="font-medium text-right">-</span>
+
+            <span class="text-gray-500">Approx Weight:</span>
+            <span id="gv-spec-weight" class="font-medium text-right">-</span>
+
+            <span class="text-gray-500">Operator:</span>
+            <span id="gv-spec-operator" class="font-medium text-right">-</span>
+
+            <span class="text-gray-500">Material:</span>
+            <span class="font-medium text-right">Cast Steel</span>
+          </div>
+        </div>
+
+        <!-- Cost Estimation -->
+        <div class="bg-blue-50 rounded-lg p-3 border border-blue-100 text-sm">
+          <div class="flex justify-between items-center">
+            <span class="text-blue-800 font-semibold">Est. Cost:</span>
+            <span id="gv-spec-cost" class="text-xl font-bold text-blue-700">-</span>
+          </div>
+          <p class="text-xs text-blue-400 mt-1">*Approximation based on market averages.</p>
+        </div>
+
+        <!-- Actions -->
+        <div class="pt-2 flex flex-col gap-2">
+          <button id="gv-download-btn" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 px-4 rounded-lg transition shadow-md flex justify-center items-center gap-2 cursor-pointer">
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+            </svg>
+            Download STL
+          </button>
+          <button id="gv-download-dxf-btn" class="w-full bg-green-600 hover:bg-green-700 text-white font-bold py-3 px-4 rounded-lg transition shadow-md flex justify-center items-center gap-2 cursor-pointer">
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+            </svg>
+            Download DXF
+          </button>
+        </div>
+      </div>
+
+      <!-- GLOBE PANEL -->
+<div id="panel-globe" class="panel bg-white/90 backdrop-blur shadow-lg rounded-xl p-6 w-full md:w-96 flex flex-col gap-4 border border-gray-200 h-fit max-h-[90vh] overflow-y-auto hidden">
+            <h1 class="text-2xl font-bold text-blue-700">Globe Valve Generator</h1>
+            <p class="text-sm text-gray-500">ASTM Globe Valve (Stop Valve) - Class 300</p>
+
+            <!-- Valve Size Selection -->
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-1">Select Size (NPS)</label>
+                <select id="gl-size-select" class="w-full border border-gray-300 rounded-md p-2 focus:ring-2 focus:ring-blue-500 outline-none bg-white">
+                </select>
+            </div>
+
+            <!-- Configuration Selection -->
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-2">Configuration</label>
+                <div class="grid grid-cols-2 gap-2">
+                    <label class="flex items-center gap-2 p-2 border border-gray-200 rounded-lg cursor-pointer hover:bg-gray-50 has-[:checked]:bg-blue-50 has-[:checked]:border-blue-400">
+                        <input type="radio" name="gl-config" value="straight" class="accent-blue-600" checked>
+                        <span class="text-sm">Straight</span>
+                    </label>
+                    <label class="flex items-center gap-2 p-2 border border-gray-200 rounded-lg cursor-pointer hover:bg-gray-50 has-[:checked]:bg-blue-50 has-[:checked]:border-blue-400">
+                        <input type="radio" name="gl-config" value="angle" class="accent-blue-600">
+                        <span class="text-sm">Angle (90°)</span>
+                    </label>
+                </div>
+            </div>
+
+            <!-- Operator Type Selection -->
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-2">Operator Type</label>
+                <div class="grid grid-cols-2 gap-2">
+                    <label class="flex items-center gap-2 p-2 border border-gray-200 rounded-lg cursor-pointer hover:bg-gray-50 has-[:checked]:bg-blue-50 has-[:checked]:border-blue-400">
+                        <input type="radio" name="gl-operator" value="handwheel" class="accent-blue-600" checked>
+                        <span class="text-sm">Handwheel</span>
+                    </label>
+                    <label class="flex items-center gap-2 p-2 border border-gray-200 rounded-lg cursor-pointer hover:bg-gray-50 has-[:checked]:bg-blue-50 has-[:checked]:border-blue-400">
+                        <input type="radio" name="gl-operator" value="actuator" class="accent-blue-600">
+                        <span class="text-sm">Actuator</span>
+                    </label>
+                </div>
+            </div>
+
+            <!-- Dimensions Table -->
+            <div class="bg-gray-50 rounded-lg p-3 border border-gray-200 text-sm">
+                <h3 class="font-semibold text-gray-700 border-b border-gray-200 pb-2 mb-2">Specs (ASTM A216 / API 600)</h3>
+                <div class="grid grid-cols-2 gap-y-2 gap-x-4">
+                    <span class="text-gray-500">Nominal Size:</span>
+                    <span id="gl-spec-size" class="font-medium text-right">-</span>
+
+                    <span class="text-gray-500">Flange Diameter:</span>
+                    <span id="gl-spec-od" class="font-medium text-right">-</span>
+
+                    <span class="text-gray-500">Face-to-Face:</span>
+                    <span id="gl-spec-width" class="font-medium text-right">-</span>
+
+                    <span class="text-gray-500">Approx Weight:</span>
+                    <span id="gl-spec-weight" class="font-medium text-right">-</span>
+
+                    <span class="text-gray-500">Type:</span>
+                    <span class="font-medium text-right">Globe (BS 1873)</span>
+
+                    <span class="text-gray-500">Configuration:</span>
+                    <span id="gl-spec-config" class="font-medium text-right">-</span>
+
+                    <span class="text-gray-500">Material:</span>
+                    <span class="font-medium text-right">Cast Steel</span>
+                </div>
+            </div>
+
+            <!-- Cost Estimation -->
+            <div class="bg-blue-50 rounded-lg p-3 border border-blue-100 text-sm">
+                <div class="flex justify-between items-center">
+                    <span class="text-blue-800 font-semibold">Est. Cost:</span>
+                    <span id="gl-spec-cost" class="text-xl font-bold text-blue-700">-</span>
+                </div>
+                <p class="text-xs text-blue-400 mt-1">*Approximation based on market averages.</p>
+            </div>
+
+            <!-- Actions -->
+            <div class="pt-2 flex flex-col gap-2">
+                <button id="gl-download-btn" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 px-4 rounded-lg transition shadow-md flex justify-center items-center gap-2 cursor-pointer">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+                    </svg>
+                    Download STL
+                </button>
+                <button id="gl-download-dxf-btn" class="w-full bg-green-600 hover:bg-green-700 text-white font-bold py-3 px-4 rounded-lg transition shadow-md flex justify-center items-center gap-2 cursor-pointer">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+                    </svg>
+                    Download DXF
+                </button>
+            </div>
+        </div>
+
+
+</div>
+
+    <!-- RIGHT HELP PANEL (unchanged) -->
+    
+
+      <!-- GLOBE PANEL -->
+      
+
+<div class="panel bg-white/80 backdrop-blur shadow-md rounded-lg p-3 h-fit self-end hidden md:block">
+      <p class="text-xs text-gray-500">
+        <strong>Left Click:</strong> Rotate <br>
+        <strong>Right Click:</strong> Pan <br>
+        <strong>Scroll:</strong> Zoom
+      </p>
+    </div>
+
+  </div>
+
+  <script type="module">
+    import * as THREE from 'three';
+    import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
+    import { STLExporter } from 'three/addons/exporters/STLExporter.js';
+
+    // ============================================================
+    // SHARED SCENE (single renderer/canvas; panels switch via tabs)
+    // ============================================================
+    const container = document.getElementById('canvas-container');
+    const scene = new THREE.Scene();
+    scene.background = new THREE.Color(0xf3f4f6);
+
+    const camera = new THREE.PerspectiveCamera(45, window.innerWidth / window.innerHeight, 0.1, 50000);
+    camera.position.set(300, 300, 400);
+
+    const renderer = new THREE.WebGLRenderer({ antialias: true });
+    renderer.setSize(window.innerWidth, window.innerHeight);
+    renderer.shadowMap.enabled = true;
+    renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+    container.appendChild(renderer.domElement);
+
+    const controls = new OrbitControls(camera, renderer.domElement);
+    controls.enableDamping = true;
+
+    // Lighting (same as originals; shared)
+    scene.add(new THREE.AmbientLight(0xffffff, 0.75));
+    const dirLight = new THREE.DirectionalLight(0xffffff, 1.1);
+    dirLight.position.set(120, 220, 140);
+    dirLight.castShadow = true;
+    dirLight.shadow.mapSize.width = 1024;
+    dirLight.shadow.mapSize.height = 1024;
+    scene.add(dirLight);
+
+    const backLight = new THREE.DirectionalLight(0xbadfff, 0.5);
+    backLight.position.set(-120, 80, -120);
+    scene.add(backLight);
+
+    // Shared group handling
+    let currentValveGroup = null;
+
+    function disposeGroup(group) {
+      if (!group) return;
+      group.traverse((child) => {
+        if (child.isMesh) child.geometry.dispose();
+      });
+    }
+
+    function setCurrentGroup(nextGroup) {
+      if (currentValveGroup) {
+        scene.remove(currentValveGroup);
+        disposeGroup(currentValveGroup);
+      }
+      currentValveGroup = nextGroup;
+      if (currentValveGroup) scene.add(currentValveGroup);
+    }
+
+    // Shared view framing (used by check valve; butterfly keeps its original camera logic)
+    function frameObjectToView(object3d, {
+      padding = 1.25,
+      minNear = 0.1,
+      farMultiplier = 4.0,
+    } = {}) {
+      const box = new THREE.Box3().setFromObject(object3d);
+      if (box.isEmpty()) return;
+
+      const size = new THREE.Vector3();
+      const center = new THREE.Vector3();
+      box.getSize(size);
+      box.getCenter(center);
+
+      const maxDim = Math.max(size.x, size.y, size.z) * padding;
+
+      const fov = THREE.MathUtils.degToRad(camera.fov);
+      const fitHeightDist = (maxDim / 2) / Math.tan(fov / 2);
+      const fitWidthDist = fitHeightDist / camera.aspect;
+      const distance = Math.max(fitHeightDist, fitWidthDist);
+
+      const dir = new THREE.Vector3()
+        .subVectors(camera.position, controls.target)
+        .normalize();
+
+      camera.position.copy(center).add(dir.multiplyScalar(distance));
+      camera.near = Math.max(minNear, distance / 100);
+      camera.far = distance * farMultiplier;
+      camera.updateProjectionMatrix();
+
+      controls.target.copy(center);
+      controls.update();
+    }
+
+    // ============================================================
+    // BUTTERFLY APP (geometry/output kept the same)
+    // ============================================================
+    const ButterflyApp = (() => {
+      // --- Data Definitions (unchanged) ---
+      const valveData = [
+        { size: 3, od: 190.5, width: 28.6, weight: 4.5, cost: 85 },
+        { size: 4, od: 228.6, width: 31.8, weight: 6.8, cost: 120 },
+        { size: 6, od: 279.4, width: 38.1, weight: 10, cost: 210 },
+        { size: 8, od: 342.9, width: 44.5, weight: 15, cost: 350 },
+        { size: 10, od: 406.4, width: 50.8, weight: 24, cost: 550 },
+        { size: 12, od: 482.6, width: 57.2, weight: 38, cost: 850 },
+        { size: 14, od: 533.4, width: 60.3, weight: 55, cost: 1200 },
+        { size: 16, od: 596.9, width: 63.5, weight: 85, cost: 1800 },
+        { size: 18, od: 635.0, width: 66.7, weight: 110, cost: 2500 },
+        { size: 20, od: 698.5, width: 69.9, weight: 160, cost: 3400 },
+        { size: 24, od: 812.8, width: 76.2, weight: 240, cost: 5200 },
+        { size: 30, od: 977.9, width: 88.9, weight: 420, cost: 9500 },
+        { size: 36, od: 1143.0, width: 101.6, weight: 650, cost: 14000 }
+      ];
+
+      const operatorCostMultiplier = { handle: 1.1, handwheel: 1.35, actuator: 2.2 };
+
+      const GEO = {
+        mainRadial: 20,
+        smallRadial: 12,
+        curveSegments: 24,
+        torusRadial: 8,
+        torusTubular: 24,
+        lugMax: 12
+      };
+
+      function getDefaultOperator(size) {
+        if (size < 8) return 'handle';
+        return 'handwheel';
+      }
+
+      // --- Materials (unchanged) ---
+      const materialBody = new THREE.MeshStandardMaterial({ color: 0x3b82f6, metalness: 0.25, roughness: 0.55 });
+      const materialMetal = new THREE.MeshStandardMaterial({ color: 0xaaaaaa, metalness: 0.8, roughness: 0.25 });
+      const materialHandle = new THREE.MeshStandardMaterial({ color: 0xdd4444, metalness: 0.2, roughness: 0.6 });
+      const materialActuator = new THREE.MeshStandardMaterial({ color: 0x2563eb, metalness: 0.35, roughness: 0.45 });
+      const materialYellow = new THREE.MeshStandardMaterial({ color: 0xfbbf24, metalness: 0.25, roughness: 0.55 });
+
+      // --- UI refs ---
+      const selectEl = document.getElementById('bf-size-select');
+      const specSizeEl = document.getElementById('bf-spec-size');
+      const specOdEl = document.getElementById('bf-spec-od');
+      const specWidthEl = document.getElementById('bf-spec-width');
+      const specWeightEl = document.getElementById('bf-spec-weight');
+      const specOperatorEl = document.getElementById('bf-spec-operator');
+      const specCostEl = document.getElementById('bf-spec-cost');
+      const operatorRadios = document.querySelectorAll('input[name="bf-operator"]');
+
+      const handleRadio = document.querySelector('input[name="bf-operator"][value="handle"]');
+      const handleLabel = handleRadio ? handleRadio.closest('label') : null;
+
+      function syncOperatorAvailability(size) {
+        const disableLever = size >= 8;
+        if (handleRadio) handleRadio.disabled = disableLever;
+
+        if (handleLabel) {
+          if (disableLever) {
+            handleLabel.classList.add('opacity-50', 'cursor-not-allowed');
+            handleLabel.classList.remove('hover:bg-gray-50');
+            if (handleRadio.checked) setOperatorRadio('handwheel');
+          } else {
+            handleLabel.classList.remove('opacity-50', 'cursor-not-allowed');
+            handleLabel.classList.add('hover:bg-gray-50');
+          }
+        }
+      }
+
+      function getOperatorType() {
+        const checked = document.querySelector('input[name="bf-operator"]:checked');
+        return checked ? checked.value : 'handle';
+      }
+
+      function getOperatorLabel(type) {
+        const labels = { handle: 'Lever Handle', handwheel: 'Gearbox Handwheel', actuator: 'Actuator' };
+        return labels[type] || 'Lever Handle';
+      }
+
+      function setOperatorRadio(type) {
+        const radio = document.querySelector(`input[name="bf-operator"][value="${type}"]`);
+        if (radio) radio.checked = true;
+      }
+
+      let lastSize = null;
+
+      // --- Geometry (unchanged) ---
+      function createValve(specs, operatorType) {
+        const group = new THREE.Group();
+
+        const radius = specs.od / 2;
+        const thickness = specs.width;
+        const innerRadius = radius * 0.72;
+        const neckHeight = radius * 0.55 + 35;
+        const neckRadius = Math.max(12, radius * 0.14);
+        const topPlateSize = neckRadius * 2.3;
+        const mountY = radius + neckHeight;
+
+        const bodyShape = new THREE.Shape();
+        bodyShape.absarc(0, 0, radius, 0, Math.PI * 2, false);
+        const holePath = new THREE.Path();
+        holePath.absarc(0, 0, innerRadius, 0, Math.PI * 2, true);
+        bodyShape.holes.push(holePath);
+
+        const bodyGeometry = new THREE.ExtrudeGeometry(bodyShape, {
+          depth: thickness,
+          bevelEnabled: false,
+          curveSegments: GEO.curveSegments
+        });
+        bodyGeometry.translate(0, 0, -thickness / 2);
+
+        const bodyMesh = new THREE.Mesh(bodyGeometry, materialBody);
+        bodyMesh.castShadow = true;
+        bodyMesh.receiveShadow = true;
+        group.add(bodyMesh);
+
+        const neckGeometry = new THREE.CylinderGeometry(neckRadius, neckRadius * 1.15, neckHeight, GEO.mainRadial);
+        neckGeometry.translate(0, radius + neckHeight / 2 - 4, 0);
+        const neckMesh = new THREE.Mesh(neckGeometry, materialBody);
+        neckMesh.castShadow = true;
+        neckMesh.receiveShadow = true;
+        group.add(neckMesh);
+
+        const plateGeo = new THREE.BoxGeometry(topPlateSize, 9, topPlateSize);
+        plateGeo.translate(0, mountY, 0);
+        const plateMesh = new THREE.Mesh(plateGeo, materialBody);
+        plateMesh.castShadow = true;
+        group.add(plateMesh);
+
+        const stemHeight = 14;
+        const stemGeo = new THREE.CylinderGeometry(neckRadius * 0.33, neckRadius * 0.33, stemHeight, GEO.smallRadial);
+        stemGeo.translate(0, mountY + stemHeight / 2 + 5, 0);
+        const stemMesh = new THREE.Mesh(stemGeo, materialMetal);
+        group.add(stemMesh);
+
+        const lugCountBase =
+          specs.size <= 4 ? 4 :
+          specs.size <= 12 ? 8 :
+          12;
+        const lugCount = Math.min(GEO.lugMax, lugCountBase);
+
+        const lugSize = Math.max(12, radius * 0.095);
+        const lugW = lugSize * 1.15;
+        const lugH = lugSize * 0.75;
+        const lugDist = radius + lugW * 0.35;
+
+        const lugGeo = new THREE.BoxGeometry(lugW, lugH, thickness);
+
+        for (let i = 0; i < lugCount; i++) {
+          const angle = (i / lugCount) * Math.PI * 2;
+          const distToNeckTop = Math.abs(angle - Math.PI / 2);
+          if (distToNeckTop < 0.35) continue;
+
+          const lug = new THREE.Mesh(lugGeo, materialBody);
+          lug.position.set(Math.cos(angle) * lugDist, Math.sin(angle) * lugDist, 0);
+          lug.rotation.z = angle;
+          group.add(lug);
+        }
+
+        const operatorBaseY = mountY + stemHeight + 5;
+
+        if (operatorType === 'handle') {
+          const hubRadius = neckRadius * 0.75;
+          const hubGeo = new THREE.CylinderGeometry(hubRadius, hubRadius, 14, GEO.mainRadial);
+          hubGeo.translate(0, operatorBaseY + 7, 0);
+          group.add(new THREE.Mesh(hubGeo, materialHandle));
+
+          const handleLength = Math.max(120, radius * 1.25);
+          const armGeo = new THREE.BoxGeometry(handleLength, Math.max(10, hubRadius * 0.55), 10);
+          armGeo.translate(handleLength / 2 + hubRadius * 0.2, operatorBaseY + 12, 0);
+          group.add(new THREE.Mesh(armGeo, materialHandle));
+
+          const gripGeo = new THREE.CylinderGeometry(6, 6, 30, GEO.smallRadial);
+          gripGeo.rotateZ(Math.PI / 2);
+          gripGeo.translate(handleLength + hubRadius * 0.2 + 10, operatorBaseY + 12, 0);
+          group.add(new THREE.Mesh(gripGeo, materialMetal));
+
+        } else if (operatorType === 'handwheel') {
+          const gearboxSize = Math.max(70, neckRadius * 3.6);
+          const boxHeight = gearboxSize * 0.75;
+
+          const gearboxGeo = new THREE.BoxGeometry(gearboxSize, boxHeight, gearboxSize);
+          gearboxGeo.translate(0, operatorBaseY + boxHeight / 2, 0);
+          group.add(new THREE.Mesh(gearboxGeo, materialActuator));
+
+          const shaftLen = Math.max(50, gearboxSize * 0.7);
+          const shaftR = Math.max(5, gearboxSize * 0.08);
+          const shaftGeo = new THREE.CylinderGeometry(shaftR, shaftR, shaftLen, GEO.smallRadial);
+          shaftGeo.rotateZ(-Math.PI / 2);
+          const shaftY = operatorBaseY + boxHeight / 2;
+          const shaftX = gearboxSize / 2 + shaftLen / 2;
+          shaftGeo.translate(shaftX, shaftY, 0);
+          group.add(new THREE.Mesh(shaftGeo, materialMetal));
+
+          const wheelRadius = Math.max(70, radius * 0.55);
+          const wheelTube = 6;
+          const rimGeo = new THREE.TorusGeometry(wheelRadius, wheelTube, GEO.torusRadial, GEO.torusTubular);
+          rimGeo.rotateY(Math.PI / 2);
+          rimGeo.translate(gearboxSize / 2 + shaftLen + 8, shaftY, 0);
+          group.add(new THREE.Mesh(rimGeo, materialYellow));
+
+          const hubGeo = new THREE.CylinderGeometry(wheelRadius * 0.18, wheelRadius * 0.2, 16, GEO.mainRadial);
+          hubGeo.rotateZ(-Math.PI / 2);
+          hubGeo.translate(gearboxSize / 2 + shaftLen + 8, shaftY, 0);
+          group.add(new THREE.Mesh(hubGeo, materialMetal));
+
+        } else if (operatorType === 'actuator') {
+          const actuatorWidth = Math.max(75, radius * 0.55);
+          const actuatorHeight = Math.max(95, radius * 0.75);
+
+          const mountSurfaceY = mountY + 5;
+          const adapterHeight = 12;
+
+          const adapterGeo = new THREE.CylinderGeometry(topPlateSize * 0.55, topPlateSize * 0.62, adapterHeight, GEO.mainRadial);
+          adapterGeo.translate(0, mountSurfaceY + adapterHeight / 2, 0);
+          group.add(new THREE.Mesh(adapterGeo, materialMetal));
+
+          const bodyGeo = new THREE.BoxGeometry(actuatorWidth * 0.9, actuatorHeight, actuatorWidth * 0.65);
+          bodyGeo.translate(0, mountSurfaceY + adapterHeight + actuatorHeight / 2, 0);
+          group.add(new THREE.Mesh(bodyGeo, materialActuator));
+
+          const topCylH = Math.max(22, actuatorHeight * 0.22);
+          const topGeo = new THREE.CylinderGeometry(actuatorWidth * 0.22, actuatorWidth * 0.22, topCylH, GEO.mainRadial);
+          topGeo.translate(0, mountSurfaceY + adapterHeight + actuatorHeight + topCylH / 2, 0);
+          group.add(new THREE.Mesh(topGeo, materialActuator));
+        }
+
+        controls.target.set(0, 0, 0);
+
+        const camDist = specs.od * 2.35 + 200;
+        camera.position.set(camDist, camDist * 0.75, camDist);
+        camera.far = camDist * 10;
+        camera.updateProjectionMatrix();
+        controls.update();
+
+        return group;
+      }
+
+      // --- DXF Export (unchanged, with bf IDs) ---
+      function exportDXFPolyface(object) {
+        const layerName = "VALVE";
+        const nominalNps = String(document.getElementById('bf-size-select')?.value ?? '').trim();
+        const valveType = 'BUTTERFLY_VALVE';
+        const rawBlockName = `${valveType}_NPS${nominalNps || 'NA'}`;
+        const blockName = rawBlockName.replace(/[^A-Za-z0-9_]/g, '_');
+
+        const verts = [];
+        const faces = [];
+        const vmap = new Map();
+
+        const v = new THREE.Vector3();
+        const keyOf = (x, y, z) => `${x.toFixed(5)},${y.toFixed(5)},${z.toFixed(5)}`;
+
+        object.traverse((child) => {
+          if (!child.isMesh) return;
+          const geom = child.geometry;
+          const pos = geom.attributes.position;
+          if (!pos) return;
+
+          const idx = geom.index;
+          const mw = child.matrixWorld;
+
+          const addVertex = (vx, vy, vz) => {
+            const k = keyOf(vx, vy, vz);
+            const existing = vmap.get(k);
+            if (existing !== undefined) return existing;
+            const id = verts.length + 1;
+            vmap.set(k, id);
+            verts.push({ x: vx, y: vy, z: vz });
+            return id;
+          };
+
+          const addTriByIndices = (a, b, c) => {
+            v.fromBufferAttribute(pos, a).applyMatrix4(mw);
+            const ia = addVertex(v.x, v.y, v.z);
+            v.fromBufferAttribute(pos, b).applyMatrix4(mw);
+            const ib = addVertex(v.x, v.y, v.z);
+            v.fromBufferAttribute(pos, c).applyMatrix4(mw);
+            const ic = addVertex(v.x, v.y, v.z);
+            faces.push([ia, ib, ic]);
+          };
+
+          if (idx) {
+            for (let i = 0; i < idx.count; i += 3) {
+              addTriByIndices(idx.getX(i), idx.getX(i + 1), idx.getX(i + 2));
+            }
+          } else {
+            for (let i = 0; i < pos.count; i += 3) {
+              addTriByIndices(i, i + 1, i + 2);
+            }
+          }
+        });
+
+        let dxf = "0\nSECTION\n2\nHEADER\n9\n$ACADVER\n1\nAC1009\n0\nENDSEC\n";
+
+        dxf += "0\nSECTION\n2\nTABLES\n";
+        dxf += "0\nTABLE\n2\nLAYER\n70\n1\n";
+        dxf += `0\nLAYER\n2\n${layerName}\n70\n0\n62\n7\n6\nCONTINUOUS\n`;
+        dxf += "0\nENDTAB\n0\nENDSEC\n";
+
+        dxf += "0\nSECTION\n2\nBLOCKS\n";
+        dxf += `0\nBLOCK\n8\n${layerName}\n2\n${blockName}\n70\n0\n10\n0.0\n20\n0.0\n30\n0.0\n3\n${blockName}\n1\n\n`;
+
+        dxf += `0\nPOLYLINE\n8\n${layerName}\n66\n1\n70\n64\n10\n0\n20\n0\n30\n0\n`;
+
+        for (const p of verts) {
+          dxf += `0\nVERTEX\n8\n${layerName}\n10\n${p.x}\n20\n${p.y}\n30\n${p.z}\n70\n192\n`;
+        }
+
+        for (const f of faces) {
+          dxf += `0\nVERTEX\n8\n${layerName}\n10\n0\n20\n0\n30\n0\n70\n128\n71\n${f[0]}\n72\n${f[1]}\n73\n${f[2]}\n74\n${f[2]}\n`;
+        }
+
+        dxf += `0\nSEQEND\n8\n${layerName}\n`;
+        dxf += "0\nENDBLK\n0\nENDSEC\n";
+
+        dxf += "0\nSECTION\n2\nENTITIES\n";
+        dxf += `0\nINSERT\n8\n${layerName}\n2\n${blockName}\n10\n0.0\n20\n0.0\n30\n0.0\n`;
+        dxf += "0\nENDSEC\n0\nEOF";
+
+        return dxf;
+      }
+
+      function updateSelection(autoSelectOperator = false) {
+        const size = parseFloat(selectEl.value);
+        const specs = valveData.find(v => v.size === size);
+
+        if (autoSelectOperator || lastSize === null || lastSize !== size) {
+          const defaultOperator = getDefaultOperator(size);
+          setOperatorRadio(defaultOperator);
+          lastSize = size;
+        }
+
+        syncOperatorAvailability(size);
+
+        const operatorType = getOperatorType();
+
+        if (specs) {
+          const adjustedCost = Math.round(specs.cost * operatorCostMultiplier[operatorType]);
+          specSizeEl.textContent = `${specs.size}"`;
+          specOdEl.textContent = `${specs.od} mm`;
+          specWidthEl.textContent = `${specs.width} mm`;
+          specWeightEl.textContent = `${specs.weight} kg`;
+          specOperatorEl.textContent = getOperatorLabel(operatorType);
+          specCostEl.textContent = `$${adjustedCost.toLocaleString()}`;
+
+          const group = createValve(specs, operatorType);
+          setCurrentGroup(group);
+        }
+      }
+
+      function updateOperatorOnly() {
+        const size = parseFloat(selectEl.value);
+        const specs = valveData.find(v => v.size === size);
+        syncOperatorAvailability(size);
+
+        const operatorType = getOperatorType();
+        if (specs) {
+          const adjustedCost = Math.round(specs.cost * operatorCostMultiplier[operatorType]);
+          specOperatorEl.textContent = getOperatorLabel(operatorType);
+          specCostEl.textContent = `$${adjustedCost.toLocaleString()}`;
+
+          const group = createValve(specs, operatorType);
+          setCurrentGroup(group);
+        }
+      }
+
+      function init() {
+        valveData.forEach(valve => {
+          const option = document.createElement('option');
+          option.value = valve.size;
+          option.textContent = `${valve.size}" (DN${Math.round(valve.size * 25.4)})`;
+          selectEl.appendChild(option);
+        });
+
+        selectEl.addEventListener('change', () => updateSelection(true));
+        operatorRadios.forEach(r => r.addEventListener('change', updateOperatorOnly));
+
+        selectEl.value = "6";
+        updateSelection(true);
+
+        document.getElementById('bf-download-btn').addEventListener('click', () => {
+          const exporter = new STLExporter();
+          const result = exporter.parse(currentValveGroup, { binary: true });
+
+          const size = selectEl.value;
+          const operatorType = getOperatorType();
+          const blob = new Blob([result], { type: 'application/octet-stream' });
+
+          const link = document.createElement('a');
+          link.style.display = 'none';
+          document.body.appendChild(link);
+          link.href = URL.createObjectURL(blob);
+          link.download = `ButterflyValve_${size}inch_${operatorType}_ASTM_LIGHT.stl`;
+          link.click();
+          document.body.removeChild(link);
+        });
+
+        document.getElementById('bf-download-dxf-btn').addEventListener('click', () => {
+          if (!currentValveGroup) return;
+          currentValveGroup.updateMatrixWorld(true);
+          const dxfContent = exportDXFPolyface(currentValveGroup);
+
+          const size = selectEl.value;
+          const operatorType = getOperatorType();
+          const blob = new Blob([dxfContent], { type: 'application/dxf' });
+
+          const link = document.createElement('a');
+          link.style.display = 'none';
+          document.body.appendChild(link);
+          link.href = URL.createObjectURL(blob);
+          link.download = `ButterflyValve_${size}inch_${operatorType}_ASTM_LIGHT_POLYFACE.dxf`;
+          link.click();
+          document.body.removeChild(link);
+        });
+      }
+
+      return { init, refresh: () => updateSelection(false) };
+    })();
+
+    // ============================================================
+    // CHECK APP (geometry/output kept the same)
+    // ============================================================
+    const CheckApp = (() => {
+      // --- Data (unchanged) ---
+      const valveData = [
+        { size: 3, od: 190.5, width: 283, weight: 30, cost: 550 },
+        { size: 4, od: 228.6, width: 305, weight: 45, cost: 750 },
+        { size: 6, od: 279.4, width: 403, weight: 75, cost: 1200 },
+        { size: 8, od: 342.9, width: 419, weight: 125, cost: 1850 },
+        { size: 10, od: 406.4, width: 457, weight: 200, cost: 2900 },
+        { size: 12, od: 482.6, width: 502, weight: 300, cost: 4200 },
+        { size: 14, od: 533.4, width: 762, weight: 420, cost: 5800 },
+        { size: 16, od: 596.9, width: 836, weight: 550, cost: 7500 },
+        { size: 18, od: 635.0, width: 914, weight: 700, cost: 9800 },
+        { size: 20, od: 698.5, width: 991, weight: 900, cost: 12500 },
+        { size: 24, od: 812.8, width: 1143, weight: 1400, cost: 18000 },
+        { size: 30, od: 977.9, width: 1397, weight: 2300, cost: 32000 },
+        { size: 36, od: 1143.0, width: 1727, weight: 3500, cost: 52000 }
+      ];
+
+      const GEO = { mainRadial: 32, smallRadial: 16, curveSegments: 24 };
+
+      // Materials (unchanged)
+      const materialBody = new THREE.MeshStandardMaterial({ color: 0x4b5563, metalness: 0.4, roughness: 0.5 });
+      const materialCover = new THREE.MeshStandardMaterial({ color: 0x6b7280, metalness: 0.35, roughness: 0.55 });
+      const materialMetal = new THREE.MeshStandardMaterial({ color: 0x9ca3af, metalness: 0.8, roughness: 0.25 });
+      const materialFlange = new THREE.MeshStandardMaterial({ color: 0x374151, metalness: 0.5, roughness: 0.4 });
+
+      // UI refs
+      const selectEl = document.getElementById('cv-size-select');
+      const specSizeEl = document.getElementById('cv-spec-size');
+      const specOdEl = document.getElementById('cv-spec-od');
+      const specWidthEl = document.getElementById('cv-spec-width');
+      const specWeightEl = document.getElementById('cv-spec-weight');
+      const specCostEl = document.getElementById('cv-spec-cost');
+
+      function createValve(specs) {
+        const group = new THREE.Group();
+
+        const npsMm = specs.size * 25.4;
+        const flangeDia = specs.od;
+        const flangeRadius = flangeDia / 2;
+        const bodyLength = specs.width;
+        const flangeThickness = Math.max(12, npsMm * 0.14);
+
+        const pipeRadius = npsMm * 0.55;
+        const flowGeometry = new THREE.CylinderGeometry(pipeRadius, pipeRadius, bodyLength, GEO.mainRadial);
+        flowGeometry.rotateZ(Math.PI / 2);
+        const flowMesh = new THREE.Mesh(flowGeometry, materialBody);
+        flowMesh.castShadow = true;
+        flowMesh.receiveShadow = true;
+        group.add(flowMesh);
+
+        const bulbRadius = npsMm * 0.8;
+        const bulbGeometry = new THREE.SphereGeometry(bulbRadius, 32, 32);
+        bulbGeometry.scale(1.2, 1, 1);
+        bulbGeometry.translate(0, npsMm * 0.1, 0);
+        const bulbMesh = new THREE.Mesh(bulbGeometry, materialBody);
+        bulbMesh.castShadow = true;
+        group.add(bulbMesh);
+
+        const fGeom = new THREE.CylinderGeometry(flangeRadius, flangeRadius, flangeThickness, GEO.mainRadial);
+        fGeom.rotateZ(Math.PI / 2);
+
+        const fPos = bodyLength / 2 - flangeThickness / 2;
+
+        const fLeft = new THREE.Mesh(fGeom, materialFlange);
+        fLeft.position.x = -fPos;
+        fLeft.castShadow = true;
+        group.add(fLeft);
+
+        const fRight = new THREE.Mesh(fGeom, materialFlange);
+        fRight.position.x = fPos;
+        fRight.castShadow = true;
+        group.add(fRight);
+
+        const boltCount = Math.min(20, Math.max(4, Math.floor(specs.size * 0.8) + 4));
+        const boltCircle = flangeRadius * 0.82;
+        const boltSize = Math.max(6, flangeRadius * 0.05);
+
+        for (let i = 0; i < boltCount; i++) {
+          const angle = (i / boltCount) * Math.PI * 2;
+          const by = Math.sin(angle) * boltCircle;
+          const bz = Math.cos(angle) * boltCircle;
+
+          const boltGeo = new THREE.CylinderGeometry(boltSize, boltSize, flangeThickness * 1.1, GEO.smallRadial);
+          boltGeo.rotateZ(Math.PI / 2);
+
+          const bL = new THREE.Mesh(boltGeo, materialMetal);
+          bL.position.set(-fPos, by, bz);
+          group.add(bL);
+
+          const bR = new THREE.Mesh(boltGeo, materialMetal);
+          bR.position.set(fPos, by, bz);
+          group.add(bR);
+        }
+
+        const neckRadius = npsMm * 0.65;
+        const neckHeight = npsMm * 0.4;
+        const neckY = bulbRadius * 0.7;
+
+        const neckGeo = new THREE.CylinderGeometry(neckRadius, neckRadius * 1.1, neckHeight, 32);
+        neckGeo.translate(0, neckY + neckHeight / 2, 0);
+        group.add(new THREE.Mesh(neckGeo, materialBody));
+
+        const coverFlangeRadius = neckRadius * 1.4;
+        const coverFlangeThick = Math.max(15, npsMm * 0.12);
+        const coverFlangeY = neckY + neckHeight;
+
+        const cfGeo = new THREE.CylinderGeometry(coverFlangeRadius, coverFlangeRadius, coverFlangeThick, 32);
+        cfGeo.translate(0, coverFlangeY + coverFlangeThick / 2, 0);
+        group.add(new THREE.Mesh(cfGeo, materialFlange));
+
+        const plateThick = coverFlangeThick;
+        const plateY = coverFlangeY + coverFlangeThick;
+        const plateGeo = new THREE.CylinderGeometry(coverFlangeRadius, coverFlangeRadius, plateThick, 32);
+        plateGeo.translate(0, plateY + plateThick / 2, 0);
+        group.add(new THREE.Mesh(plateGeo, materialCover));
+
+        const cBoltCount = Math.max(4, Math.floor(boltCount * 0.8));
+        const cBoltCircle = coverFlangeRadius * 0.8;
+        const cBoltH = coverFlangeThick * 2.2;
+        const cBoltSize = boltSize;
+
+        for (let i = 0; i < cBoltCount; i++) {
+          const angle = (i / cBoltCount) * Math.PI * 2;
+          const bx = Math.sin(angle) * cBoltCircle;
+          const bz = Math.cos(angle) * cBoltCircle;
+
+          const bGeo = new THREE.CylinderGeometry(cBoltSize, cBoltSize, cBoltH, 12);
+          const bMesh = new THREE.Mesh(bGeo, materialMetal);
+          bMesh.position.set(bx, plateY, bz);
+          group.add(bMesh);
+
+          const nutGeo = new THREE.CylinderGeometry(cBoltSize * 1.6, cBoltSize * 1.6, cBoltSize, 6);
+          const nutMesh = new THREE.Mesh(nutGeo, materialMetal);
+          nutMesh.position.set(bx, plateY + cBoltH / 2, bz);
+          group.add(nutMesh);
+        }
+
+        if (specs.size >= 8) {
+          const eyeR = npsMm * 0.15;
+          const eyeT = eyeR * 0.3;
+          const eyeGeo = new THREE.TorusGeometry(eyeR, eyeT, 12, 24);
+          const eyeMesh = new THREE.Mesh(eyeGeo, materialMetal);
+          eyeMesh.position.set(0, plateY + plateThick + eyeR, 0);
+          group.add(eyeMesh);
+        } else {
+          const topNutGeo = new THREE.CylinderGeometry(npsMm * 0.1, npsMm * 0.1, npsMm * 0.1, 6);
+          topNutGeo.translate(0, plateY + plateThick + npsMm * 0.05, 0);
+          group.add(new THREE.Mesh(topNutGeo, materialMetal));
+        }
+
+        const arrowLen = bodyLength * 0.4;
+        const arrowW = npsMm * 0.15;
+        const arrowShape = new THREE.Shape();
+        arrowShape.moveTo(0, arrowW / 2);
+        arrowShape.lineTo(arrowLen - arrowW, arrowW / 2);
+        arrowShape.lineTo(arrowLen - arrowW, arrowW);
+        arrowShape.lineTo(arrowLen, 0);
+        arrowShape.lineTo(arrowLen - arrowW, -arrowW);
+        arrowShape.lineTo(arrowLen - arrowW, -arrowW / 2);
+        arrowShape.lineTo(0, -arrowW / 2);
+        arrowShape.lineTo(0, arrowW / 2);
+
+        const arrowExtrude = new THREE.ExtrudeGeometry(arrowShape, { depth: 5, bevelEnabled: false });
+        const arrowMesh = new THREE.Mesh(arrowExtrude, materialMetal);
+        arrowMesh.rotation.y = Math.PI;
+        arrowMesh.position.set(-arrowLen / 2, 0, bulbRadius + 2);
+        group.add(arrowMesh);
+
+        frameObjectToView(group, { padding: 1.3 });
+        return group;
+      }
+
+      function exportDXFPolyface(object) {
+        const layerName = "CHECK_VALVE";
+        const nominalNps = String(document.getElementById('cv-size-select')?.value ?? '').trim();
+        const blockName = `CHECK_VALVE_NPS${nominalNps}`;
+
+        const verts = [];
+        const faces = [];
+        const vmap = new Map();
+
+        const v = new THREE.Vector3();
+        const keyOf = (x, y, z) => `${x.toFixed(4)},${y.toFixed(4)},${z.toFixed(4)}`;
+
+        object.traverse((child) => {
+          if (!child.isMesh) return;
+          const geom = child.geometry;
+          const pos = geom.attributes.position;
+          if (!pos) return;
+
+          const idx = geom.index;
+          const mw = child.matrixWorld;
+
+          const addVertex = (vx, vy, vz) => {
+            const k = keyOf(vx, vy, vz);
+            const existing = vmap.get(k);
+            if (existing !== undefined) return existing;
+            const id = verts.length + 1;
+            vmap.set(k, id);
+            verts.push({ x: vx, y: vy, z: vz });
+            return id;
+          };
+
+          const addTriByIndices = (a, b, c) => {
+            v.fromBufferAttribute(pos, a).applyMatrix4(mw);
+            const ia = addVertex(v.x, v.y, v.z);
+            v.fromBufferAttribute(pos, b).applyMatrix4(mw);
+            const ib = addVertex(v.x, v.y, v.z);
+            v.fromBufferAttribute(pos, c).applyMatrix4(mw);
+            const ic = addVertex(v.x, v.y, v.z);
+            faces.push([ia, ib, ic]);
+          };
+
+          if (idx) {
+            for (let i = 0; i < idx.count; i += 3) {
+              addTriByIndices(idx.getX(i), idx.getX(i + 1), idx.getX(i + 2));
+            }
+          } else {
+            for (let i = 0; i < pos.count; i += 3) {
+              addTriByIndices(i, i + 1, i + 2);
+            }
+          }
+        });
+
+        let dxf = "0\nSECTION\n2\nHEADER\n9\n$ACADVER\n1\nAC1009\n0\nENDSEC\n";
+
+        dxf += "0\nSECTION\n2\nTABLES\n";
+        dxf += "0\nTABLE\n2\nLAYER\n70\n1\n";
+        dxf += `0\nLAYER\n2\n${layerName}\n70\n0\n62\n7\n6\nCONTINUOUS\n`;
+        dxf += "0\nENDTAB\n0\nENDSEC\n";
+
+        dxf += "0\nSECTION\n2\nBLOCKS\n";
+        dxf += `0\nBLOCK\n8\n${layerName}\n2\n${blockName}\n70\n0\n10\n0.0\n20\n0.0\n30\n0.0\n3\n${blockName}\n1\n\n`;
+
+        dxf += `0\nPOLYLINE\n8\n${layerName}\n66\n1\n70\n64\n10\n0\n20\n0\n30\n0\n`;
+
+        for (const p of verts) {
+          dxf += `0\nVERTEX\n8\n${layerName}\n10\n${p.x}\n20\n${p.y}\n30\n${p.z}\n70\n192\n`;
+        }
+
+        for (const f of faces) {
+          dxf += `0\nVERTEX\n8\n${layerName}\n10\n0\n20\n0\n30\n0\n70\n128\n71\n${f[0]}\n72\n${f[1]}\n73\n${f[2]}\n74\n${f[2]}\n`;
+        }
+
+        dxf += `0\nSEQEND\n8\n${layerName}\n`;
+        dxf += "0\nENDBLK\n0\nENDSEC\n";
+
+        dxf += "0\nSECTION\n2\nENTITIES\n";
+        dxf += `0\nINSERT\n8\n${layerName}\n2\n${blockName}\n10\n0.0\n20\n0.0\n30\n0.0\n`;
+        dxf += "0\nENDSEC\n0\nEOF";
+
+        return dxf;
+      }
+
+      function updateSelection() {
+        const size = parseFloat(selectEl.value);
+        const specs = valveData.find(v => v.size === size);
+
+        if (specs) {
+          const estimatedCost = specs.cost;
+          specSizeEl.textContent = `${specs.size}"`;
+          specOdEl.textContent = `${specs.od} mm`;
+          specWidthEl.textContent = `${specs.width} mm`;
+          specWeightEl.textContent = `${specs.weight} kg`;
+          specCostEl.textContent = `$${estimatedCost.toLocaleString()}`;
+
+          const group = createValve(specs);
+          setCurrentGroup(group);
+        }
+      }
+
+      function init() {
+        valveData.forEach(valve => {
+          const option = document.createElement('option');
+          option.value = valve.size;
+          option.textContent = `${valve.size}" (DN${Math.round(valve.size * 25.4)})`;
+          selectEl.appendChild(option);
+        });
+
+        selectEl.addEventListener('change', updateSelection);
+
+        selectEl.value = "6";
+        updateSelection();
+
+        document.getElementById('cv-download-btn').addEventListener('click', () => {
+          const exporter = new STLExporter();
+          const result = exporter.parse(currentValveGroup, { binary: true });
+
+          const size = selectEl.value;
+          const blob = new Blob([result], { type: 'application/octet-stream' });
+
+          const link = document.createElement('a');
+          link.style.display = 'none';
+          document.body.appendChild(link);
+          link.href = URL.createObjectURL(blob);
+          link.download = `CheckValve_${size}inch_300lb_ASTM.stl`;
+          link.click();
+          document.body.removeChild(link);
+        });
+
+        document.getElementById('cv-download-dxf-btn').addEventListener('click', () => {
+          if (!currentValveGroup) return;
+          currentValveGroup.updateMatrixWorld(true);
+          const dxfContent = exportDXFPolyface(currentValveGroup);
+
+          const size = selectEl.value;
+          const blob = new Blob([dxfContent], { type: 'application/dxf' });
+
+          const link = document.createElement('a');
+          link.style.display = 'none';
+          document.body.appendChild(link);
+          link.href = URL.createObjectURL(blob);
+          link.download = `CheckValve_${size}inch_300lb_ASTM_POLYFACE.dxf`;
+          link.click();
+          document.body.removeChild(link);
+        });
+      }
+
+      return { init, refresh: updateSelection };
+    })();
+
+    
+    // ============================================================
+    // GATE APP (geometry/output kept the same as standalone gate file)
+    // ============================================================
+    const GateApp = (() => {
+      // --- Data Definitions (ANSI Class 300) ---
+      const valveData = [
+        { size: 3, od: 190.5, width: 283, weight: 30, cost: 550 },
+        { size: 4, od: 228.6, width: 305, weight: 45, cost: 750 },
+        { size: 6, od: 279.4, width: 403, weight: 75, cost: 1200 },
+        { size: 8, od: 342.9, width: 419, weight: 125, cost: 1850 },
+        { size: 10, od: 406.4, width: 457, weight: 200, cost: 2900 },
+        { size: 12, od: 482.6, width: 502, weight: 300, cost: 4200 },
+        { size: 14, od: 533.4, width: 762, weight: 420, cost: 5800 },
+        { size: 16, od: 596.9, width: 836, weight: 550, cost: 7500 },
+        { size: 18, od: 635.0, width: 914, weight: 700, cost: 9800 },
+        { size: 20, od: 698.5, width: 991, weight: 900, cost: 12500 },
+        { size: 24, od: 812.8, width: 1143, weight: 1400, cost: 18000 },
+        { size: 30, od: 977.9, width: 1397, weight: 2300, cost: 32000 },
+        { size: 36, od: 1143.0, width: 1727, weight: 3500, cost: 52000 }
+      ];
+
+      const operatorCostMultiplier = { handwheel: 1.0, actuator: 2.5 };
+
+      // Student / Light-CAD geometry tuning
+      const GEO = {
+        mainRadial: 20,
+        smallRadial: 12,
+        curveSegments: 24,
+        lugMax: 12
+      };
+
+      function getDefaultOperator(size) {
+        return 'handwheel';
+      }
+
+      // --- Materials (same as standalone) ---
+      const materialBody = new THREE.MeshStandardMaterial({ color: 0x4b5563, metalness: 0.4, roughness: 0.5 });
+      const materialBonnet = new THREE.MeshStandardMaterial({ color: 0x6b7280, metalness: 0.35, roughness: 0.55 });
+      const materialMetal = new THREE.MeshStandardMaterial({ color: 0x9ca3af, metalness: 0.8, roughness: 0.25 });
+      const materialFlange = new THREE.MeshStandardMaterial({ color: 0x374151, metalness: 0.5, roughness: 0.4 });
+      const materialHandwheel = new THREE.MeshStandardMaterial({ color: 0xef4444, metalness: 0.2, roughness: 0.6 });
+      const materialActuator = new THREE.MeshStandardMaterial({ color: 0x2563eb, metalness: 0.35, roughness: 0.45 });
+
+      // --- UI refs ---
+      const selectEl = document.getElementById('gv-size-select');
+      const specSizeEl = document.getElementById('gv-spec-size');
+      const specOdEl = document.getElementById('gv-spec-od');
+      const specWidthEl = document.getElementById('gv-spec-width');
+      const specWeightEl = document.getElementById('gv-spec-weight');
+      const specOperatorEl = document.getElementById('gv-spec-operator');
+      const specCostEl = document.getElementById('gv-spec-cost');
+
+      const operatorRadios = document.querySelectorAll('input[name="gv-operator"]');
+      const stemRadios = document.querySelectorAll('input[name="gv-stem"]');
+
+      function getOperatorType() {
+        const checked = document.querySelector('input[name="gv-operator"]:checked');
+        return checked ? checked.value : 'handwheel';
+      }
+
+      function getStemType() {
+        const checked = document.querySelector('input[name="gv-stem"]:checked');
+        return checked ? checked.value : 'rising';
+      }
+
+      function getOperatorLabel(type) {
+        const labels = { handwheel: 'Handwheel', actuator: 'Electric Actuator' };
+        return labels[type] || 'Handwheel';
+      }
+
+      function setOperatorRadio(type) {
+        const radio = document.querySelector(`input[name="gv-operator"][value="${type}"]`);
+        if (radio) radio.checked = true;
+      }
+
+      // --- Geometry (same as standalone, but returns a group) ---
+      function createValve(specs, operatorType, stemType) {
+        const group = new THREE.Group();
+
+        const npsMm = specs.size * 25.4;
+        const flangeDia = specs.od;
+        const flangeRadius = flangeDia / 2;
+        const bodyLength = specs.width;
+        const flangeThickness = Math.max(12, npsMm * 0.14);
+
+        // 1) Body: horizontal flow pipe
+        const pipeRadius = npsMm * 0.6;
+        const flowGeometry = new THREE.CylinderGeometry(pipeRadius, pipeRadius, bodyLength, GEO.mainRadial);
+        flowGeometry.rotateZ(Math.PI / 2);
+        const flowMesh = new THREE.Mesh(flowGeometry, materialBody);
+        flowMesh.castShadow = true;
+        flowMesh.receiveShadow = true;
+        group.add(flowMesh);
+
+        // 2) Central chest (gate housing)
+        const chestRadius = npsMm * 0.85;
+        const chestHeight = npsMm * 1.7;
+        const chestYOffset = npsMm * 0.35;
+
+        const chestGeometry = new THREE.CylinderGeometry(chestRadius, chestRadius * 0.95, chestHeight, GEO.mainRadial);
+        chestGeometry.scale(1, 1, 0.75); // flatten Z
+        chestGeometry.translate(0, chestYOffset, 0);
+        const chestMesh = new THREE.Mesh(chestGeometry, materialBody);
+        chestMesh.castShadow = true;
+        chestMesh.receiveShadow = true;
+        group.add(chestMesh);
+
+        // 3) Flanges
+        const fGeom = new THREE.CylinderGeometry(flangeRadius, flangeRadius, flangeThickness, GEO.mainRadial);
+        fGeom.rotateZ(Math.PI / 2);
+
+        const fPos = bodyLength / 2 - flangeThickness / 2;
+
+        const fLeft = new THREE.Mesh(fGeom, materialFlange);
+        fLeft.position.x = -fPos;
+        fLeft.castShadow = true;
+        group.add(fLeft);
+
+        const fRight = new THREE.Mesh(fGeom, materialFlange);
+        fRight.position.x = fPos;
+        fRight.castShadow = true;
+        group.add(fRight);
+
+        // 4) Bolts
+        const boltCount = Math.min(12, Math.floor(specs.size / 2) + 4);
+        const boltCircle = flangeRadius * 0.82;
+        const boltSize = Math.max(6, flangeRadius * 0.05);
+
+        for (let i = 0; i < boltCount; i++) {
+          const angle = (i / boltCount) * Math.PI * 2;
+          const by = Math.sin(angle) * boltCircle;
+          const bz = Math.cos(angle) * boltCircle;
+
+          const boltGeo = new THREE.CylinderGeometry(boltSize, boltSize, flangeThickness * 1.1, GEO.smallRadial);
+          boltGeo.rotateZ(Math.PI / 2);
+
+          const bL = new THREE.Mesh(boltGeo, materialMetal);
+          bL.position.set(-fPos, by, bz);
+          group.add(bL);
+
+          const bR = new THREE.Mesh(boltGeo, materialMetal);
+          bR.position.set(fPos, by, bz);
+          group.add(bR);
+        }
+
+        // 5) Bonnet (flange + tapered body + top flange)
+        const chestTopY = chestYOffset + chestHeight / 2;
+
+        const bFlangeH = npsMm * 0.15;
+        const bFlangeW = chestRadius * 2.2;
+        const bFlangeD = chestRadius * 1.5;
+        const bFlangeGeo = new THREE.BoxGeometry(bFlangeW, bFlangeH, bFlangeD);
+        bFlangeGeo.translate(0, chestTopY + bFlangeH / 2, 0);
+        group.add(new THREE.Mesh(bFlangeGeo, materialFlange));
+
+        const bonnetH = npsMm * 1.2;
+        const bonnetBaseY = chestTopY + bFlangeH;
+        const bonnetGeo = new THREE.CylinderGeometry(chestRadius * 0.5, chestRadius * 0.9, bonnetH, GEO.mainRadial);
+        bonnetGeo.scale(1, 1, 0.7);
+        bonnetGeo.translate(0, bonnetBaseY + bonnetH / 2, 0);
+        group.add(new THREE.Mesh(bonnetGeo, materialBonnet));
+
+        const bTopH = npsMm * 0.12;
+        const bTopY = bonnetBaseY + bonnetH;
+        const bTopGeo = new THREE.CylinderGeometry(chestRadius * 0.7, chestRadius * 0.7, bTopH, GEO.mainRadial);
+        bTopGeo.translate(0, bTopY + bTopH / 2, 0);
+        group.add(new THREE.Mesh(bTopGeo, materialFlange));
+
+        // 6) Yoke
+        const yokeStart = bTopY + bTopH;
+        const yokeH = npsMm * 2.5;
+        const yokeW = chestRadius * 1.4;
+        const legT = Math.max(8, yokeW * 0.15);
+
+        const legGeo = new THREE.BoxGeometry(legT, yokeH, legT);
+
+        const legL = new THREE.Mesh(legGeo, materialMetal);
+        legL.position.set(-yokeW / 2 + legT / 2, yokeStart + yokeH / 2, 0);
+        group.add(legL);
+
+        const legR = new THREE.Mesh(legGeo, materialMetal);
+        legR.position.set(yokeW / 2 - legT / 2, yokeStart + yokeH / 2, 0);
+        group.add(legR);
+
+        const topBlockH = legT * 2.5;
+        const topBlockGeo = new THREE.BoxGeometry(yokeW, topBlockH, legT * 2.5);
+        topBlockGeo.translate(0, yokeStart + yokeH + topBlockH / 2, 0);
+        group.add(new THREE.Mesh(topBlockGeo, materialMetal));
+
+        const stemTopY = yokeStart + yokeH + topBlockH;
+
+        // 7) Stem
+        const stemR = Math.max(6, npsMm * 0.12);
+        let visualStemH, stemPosY;
+
+        if (stemType === 'rising') {
+          visualStemH = (stemTopY - chestTopY) + (npsMm * 1.0);
+          stemPosY = chestTopY + visualStemH / 2;
+        } else {
+          visualStemH = (stemTopY - chestTopY) + 5;
+          stemPosY = chestTopY + visualStemH / 2;
+        }
+
+        const stemGeo = new THREE.CylinderGeometry(stemR, stemR, visualStemH, GEO.smallRadial);
+        stemGeo.translate(0, stemPosY, 0);
+        group.add(new THREE.Mesh(stemGeo, materialMetal));
+
+        // 8) Operator
+        const opY = stemType === 'rising' ? stemTopY : stemTopY + 5;
+
+        if (operatorType === 'handwheel') {
+          const wR = Math.max(80, npsMm * 1.8);
+          const wT = Math.max(12, npsMm * 0.15);
+
+          const hubGeo = new THREE.CylinderGeometry(stemR * 2.5, stemR * 2, wT, GEO.mainRadial);
+          hubGeo.translate(0, opY + wT / 2, 0);
+          group.add(new THREE.Mesh(hubGeo, materialMetal));
+
+          const rimGeo = new THREE.TorusGeometry(wR, wT * 0.6, 10, 48);
+          rimGeo.rotateX(Math.PI / 2);
+          rimGeo.translate(0, opY + wT / 2, 0);
+          group.add(new THREE.Mesh(rimGeo, materialHandwheel));
+
+          const webGeo = new THREE.CylinderGeometry(wR, stemR * 2, wT * 0.2, GEO.mainRadial);
+          webGeo.translate(0, opY + wT / 2, 0);
+          group.add(new THREE.Mesh(webGeo, materialHandwheel));
+        } else {
+          const actW = npsMm * 2.2;
+          const actH = npsMm * 2.5;
+
+          const bH = 20;
+          const bGeo = new THREE.CylinderGeometry(yokeW * 0.4, yokeW * 0.5, bH, GEO.mainRadial);
+          bGeo.translate(0, opY + bH / 2, 0);
+          group.add(new THREE.Mesh(bGeo, materialMetal));
+
+          const boxGeo = new THREE.BoxGeometry(actW, actH, actW * 0.6);
+          boxGeo.translate(0, opY + bH + actH / 2, 0);
+          group.add(new THREE.Mesh(boxGeo, materialActuator));
+
+          const tH = actH * 0.3;
+          const tGeo = new THREE.CylinderGeometry(actW * 0.25, actW * 0.25, tH, GEO.mainRadial);
+          tGeo.translate(0, opY + bH + actH + tH / 2, 0);
+          group.add(new THREE.Mesh(tGeo, materialActuator));
+        }
+
+        frameObjectToView(group, { padding: 1.3 });
+        return group;
+      }
+
+      // --- DXF Export (same format as others) ---
+      function exportDXFPolyface(object) {
+        const layerName = "VALVE";
+        const nominalNps = String(document.getElementById('gv-size-select')?.value ?? '').trim();
+        const valveType = 'GATE_VALVE';
+        const rawBlockName = `${valveType}_NPS${nominalNps || 'NA'}`;
+        const blockName = rawBlockName.replace(/[^A-Za-z0-9_]/g, '_');
+
+        const verts = [];
+        const faces = [];
+        const vmap = new Map();
+
+        const v = new THREE.Vector3();
+        const keyOf = (x, y, z) => `${x.toFixed(5)},${y.toFixed(5)},${z.toFixed(5)}`;
+
+        object.traverse((child) => {
+          if (!child.isMesh) return;
+          const geom = child.geometry;
+          const pos = geom.attributes.position;
+          if (!pos) return;
+
+          const idx = geom.index;
+          const mw = child.matrixWorld;
+
+          const addVertex = (vx, vy, vz) => {
+            const k = keyOf(vx, vy, vz);
+            const existing = vmap.get(k);
+            if (existing !== undefined) return existing;
+            const id = verts.length + 1;
+            vmap.set(k, id);
+            verts.push({ x: vx, y: vy, z: vz });
+            return id;
+          };
+
+          const addTriByIndices = (a, b, c) => {
+            v.fromBufferAttribute(pos, a).applyMatrix4(mw);
+            const ia = addVertex(v.x, v.y, v.z);
+            v.fromBufferAttribute(pos, b).applyMatrix4(mw);
+            const ib = addVertex(v.x, v.y, v.z);
+            v.fromBufferAttribute(pos, c).applyMatrix4(mw);
+            const ic = addVertex(v.x, v.y, v.z);
+            faces.push([ia, ib, ic]);
+          };
+
+          if (idx) {
+            for (let i = 0; i < idx.count; i += 3) {
+              addTriByIndices(idx.getX(i), idx.getX(i + 1), idx.getX(i + 2));
+            }
+          } else {
+            for (let i = 0; i < pos.count; i += 3) {
+              addTriByIndices(i, i + 1, i + 2);
+            }
+          }
+        });
+
+        let dxf = "0\nSECTION\n2\nHEADER\n9\n$ACADVER\n1\nAC1009\n0\nENDSEC\n";
+
+        dxf += "0\nSECTION\n2\nTABLES\n";
+        dxf += "0\nTABLE\n2\nLAYER\n70\n1\n";
+        dxf += `0\nLAYER\n2\n${layerName}\n70\n0\n62\n7\n6\nCONTINUOUS\n`;
+        dxf += "0\nENDTAB\n0\nENDSEC\n";
+
+        dxf += "0\nSECTION\n2\nBLOCKS\n";
+        dxf += `0\nBLOCK\n8\n${layerName}\n2\n${blockName}\n70\n0\n10\n0.0\n20\n0.0\n30\n0.0\n3\n${blockName}\n1\n\n`;
+
+        dxf += `0\nPOLYLINE\n8\n${layerName}\n66\n1\n70\n64\n10\n0\n20\n0\n30\n0\n`;
+
+        for (const p of verts) {
+          dxf += `0\nVERTEX\n8\n${layerName}\n10\n${p.x}\n20\n${p.y}\n30\n${p.z}\n70\n192\n`;
+        }
+
+        for (const f of faces) {
+          dxf += `0\nVERTEX\n8\n${layerName}\n10\n0\n20\n0\n30\n0\n70\n128\n71\n${f[0]}\n72\n${f[1]}\n73\n${f[2]}\n74\n${f[2]}\n`;
+        }
+
+        dxf += `0\nSEQEND\n8\n${layerName}\n`;
+        dxf += "0\nENDBLK\n0\nENDSEC\n";
+
+        dxf += "0\nSECTION\n2\nENTITIES\n";
+        dxf += `0\nINSERT\n8\n${layerName}\n2\n${blockName}\n10\n0.0\n20\n0.0\n30\n0.0\n`;
+        dxf += "0\nENDSEC\n0\nEOF";
+
+        return dxf;
+      }
+
+      let lastSize = null;
+
+      function updateSelection(autoSelectOperator = false) {
+        const size = parseFloat(selectEl.value);
+        const specs = valveData.find(v => v.size === size);
+
+        if (autoSelectOperator || lastSize === null || lastSize !== size) {
+          setOperatorRadio(getDefaultOperator(size));
+          lastSize = size;
+        }
+
+        const operatorType = getOperatorType();
+        const stemType = getStemType();
+
+        if (specs) {
+          const adjustedCost = Math.round(specs.cost * operatorCostMultiplier[operatorType]);
+          specSizeEl.textContent = `${specs.size}"`;
+          specOdEl.textContent = `${specs.od} mm`;
+          specWidthEl.textContent = `${specs.width} mm`;
+          specWeightEl.textContent = `${specs.weight} kg`;
+          specOperatorEl.textContent = getOperatorLabel(operatorType);
+          specCostEl.textContent = `$${adjustedCost.toLocaleString()}`;
+
+          const group = createValve(specs, operatorType, stemType);
+          setCurrentGroup(group);
+        }
+      }
+
+      function updateOperatorOnly() {
+        const size = parseFloat(selectEl.value);
+        const specs = valveData.find(v => v.size === size);
+
+        const operatorType = getOperatorType();
+        const stemType = getStemType();
+
+        if (specs) {
+          const adjustedCost = Math.round(specs.cost * operatorCostMultiplier[operatorType]);
+          specOperatorEl.textContent = getOperatorLabel(operatorType);
+          specCostEl.textContent = `$${adjustedCost.toLocaleString()}`;
+
+          const group = createValve(specs, operatorType, stemType);
+          setCurrentGroup(group);
+        }
+      }
+
+      function init() {
+        valveData.forEach(valve => {
+          const option = document.createElement('option');
+          option.value = valve.size;
+          option.textContent = `${valve.size}" (DN${Math.round(valve.size * 25.4)})`;
+          selectEl.appendChild(option);
+        });
+
+        selectEl.addEventListener('change', () => updateSelection(true));
+        operatorRadios.forEach(r => r.addEventListener('change', updateOperatorOnly));
+        stemRadios.forEach(r => r.addEventListener('change', updateOperatorOnly));
+
+        selectEl.value = "6";
+        updateSelection(true);
+
+        document.getElementById('gv-download-btn').addEventListener('click', () => {
+          const exporter = new STLExporter();
+          const result = exporter.parse(currentValveGroup, { binary: true });
+
+          const size = selectEl.value;
+          const operatorType = getOperatorType();
+          const stemType = getStemType();
+          const blob = new Blob([result], { type: 'application/octet-stream' });
+
+          const link = document.createElement('a');
+          link.style.display = 'none';
+          document.body.appendChild(link);
+          link.href = URL.createObjectURL(blob);
+          link.download = `GateValve_${size}inch_${operatorType}_${stemType}_ASTM_LIGHT.stl`;
+          link.click();
+          document.body.removeChild(link);
+        });
+
+        document.getElementById('gv-download-dxf-btn').addEventListener('click', () => {
+          if (!currentValveGroup) return;
+          currentValveGroup.updateMatrixWorld(true);
+          const dxfContent = exportDXFPolyface(currentValveGroup);
+
+          const size = selectEl.value;
+          const operatorType = getOperatorType();
+          const stemType = getStemType();
+          const blob = new Blob([dxfContent], { type: 'application/dxf' });
+
+          const link = document.createElement('a');
+          link.style.display = 'none';
+          document.body.appendChild(link);
+          link.href = URL.createObjectURL(blob);
+          link.download = `GateValve_${size}inch_${operatorType}_${stemType}_ASTM_LIGHT_POLYFACE.dxf`;
+          link.click();
+          document.body.removeChild(link);
+        });
+      }
+
+      return { init, refresh: () => updateSelection(false) };
+    })()
+
+    // ============================================================
+    // GLOBE VALVE (Class 300) — integrated from Globe Valve_rev2.html
+    // ============================================================
+    const GlobeApp = (() => {
+      // --- Data Definitions (ANSI Class 300) ---
+      const valveData = [
+        { size: 3,  od: 190.5, width: 283,  weight: 30,   cost: 550 },
+        { size: 4,  od: 228.6, width: 305,  weight: 45,   cost: 750 },
+        { size: 6,  od: 279.4, width: 403,  weight: 75,   cost: 1200 },
+        { size: 8,  od: 342.9, width: 419,  weight: 125,  cost: 1850 },
+        { size: 10, od: 406.4, width: 457,  weight: 200,  cost: 2900 },
+        { size: 12, od: 482.6, width: 502,  weight: 300,  cost: 4200 },
+        { size: 14, od: 533.4, width: 762,  weight: 420,  cost: 5800 },
+        { size: 16, od: 596.9, width: 836,  weight: 550,  cost: 7500 },
+        { size: 18, od: 635.0, width: 914,  weight: 700,  cost: 9800 },
+        { size: 20, od: 698.5, width: 991,  weight: 900,  cost: 12500 },
+        { size: 24, od: 812.8, width: 1143, weight: 1400, cost: 18000 },
+        { size: 30, od: 977.9, width: 1397, weight: 2300, cost: 32000 },
+        { size: 36, od: 1143.0, width: 1727, weight: 3500, cost: 52000 }
+      ];
+
+      const operatorCostMultiplier = { handwheel: 1.0, actuator: 2.5 };
+
+      const GEO = {
+        mainRadial: 32,
+        smallRadial: 16,
+        curveSegments: 24,
+      };
+
+      // --- Materials (match standalone globe) ---
+      const materialBody = new THREE.MeshStandardMaterial({ color: 0x4b5563, metalness: 0.4, roughness: 0.5 });
+      const materialBonnet = new THREE.MeshStandardMaterial({ color: 0x5e6673, metalness: 0.4, roughness: 0.5 });
+      const materialMetal = new THREE.MeshStandardMaterial({ color: 0x9ca3af, metalness: 0.8, roughness: 0.25 });
+      const materialFlange = new THREE.MeshStandardMaterial({ color: 0x374151, metalness: 0.5, roughness: 0.4 });
+      const materialHandwheel = new THREE.MeshStandardMaterial({ color: 0xd97706, metalness: 0.1, roughness: 0.6 });
+      const materialActuator = new THREE.MeshStandardMaterial({ color: 0x2563eb, metalness: 0.35, roughness: 0.45 });
+
+      // --- UI refs ---
+      const selectEl = document.getElementById('gl-size-select');
+      const specSizeEl = document.getElementById('gl-spec-size');
+      const specOdEl = document.getElementById('gl-spec-od');
+      const specWidthEl = document.getElementById('gl-spec-width');
+      const specWeightEl = document.getElementById('gl-spec-weight');
+      const specCostEl = document.getElementById('gl-spec-cost');
+      const specConfigEl = document.getElementById('gl-spec-config');
+
+      const operatorRadios = document.querySelectorAll('input[name="gl-operator"]');
+      const configRadios = document.querySelectorAll('input[name="gl-config"]');
+
+      function getOperatorType() {
+        const checked = document.querySelector('input[name="gl-operator"]:checked');
+        return checked ? checked.value : 'handwheel';
+      }
+
+      function getConfigType() {
+        const checked = document.querySelector('input[name="gl-config"]:checked');
+        return checked ? checked.value : 'straight';
+      }
+
+      // Populate dropdown
+      valveData.forEach(valve => {
+        const option = document.createElement('option');
+        option.value = valve.size;
+        option.textContent = `${valve.size}" (DN${Math.round(valve.size * 25.4)})`;
+        selectEl.appendChild(option);
+      });
+
+      // --- Geometry (same as standalone; uses shared currentValveGroup) ---
+      function createGlobeValve(specs, operatorType, configType) {
+        if (currentValveGroup) {
+          scene.remove(currentValveGroup);
+          disposeGroup(currentValveGroup);
+          currentValveGroup = null;
+        }
+
+        const group = new THREE.Group();
+
+        const npsMm = specs.size * 25.4;
+        const flangeDia = specs.od;
+        const flangeRadius = flangeDia / 2;
+        const bodyLength = specs.width;
+        const flangeThickness = Math.max(12, npsMm * 0.14);
+        const pipeRadius = npsMm * 0.55;
+        const globeRadius = npsMm * 0.85;
+
+        // Central globe
+        const globeGeo = new THREE.SphereGeometry(globeRadius, 40, 40);
+        globeGeo.scale(1.1, 0.95, 1.1);
+        const globeMesh = new THREE.Mesh(globeGeo, materialBody);
+        globeMesh.castShadow = true;
+        group.add(globeMesh);
+
+        // Flange base
+        const fGeom = new THREE.CylinderGeometry(flangeRadius, flangeRadius, flangeThickness, GEO.mainRadial);
+
+        // Bolts
+        const boltCount = Math.min(20, Math.max(4, Math.floor(specs.size * 0.8) + 4));
+        const boltCircle = flangeRadius * 0.82;
+        const boltSize = Math.max(6, flangeRadius * 0.05);
+
+        if (configType === 'straight') {
+          const flowGeometry = new THREE.CylinderGeometry(pipeRadius, pipeRadius, bodyLength, GEO.mainRadial);
+          flowGeometry.rotateZ(Math.PI / 2);
+          const flowMesh = new THREE.Mesh(flowGeometry, materialBody);
+          flowMesh.castShadow = true;
+          group.add(flowMesh);
+
+          const fPos = bodyLength / 2 - flangeThickness / 2;
+
+          const fLeft = new THREE.Mesh(fGeom, materialFlange);
+          fLeft.rotation.z = Math.PI / 2;
+          fLeft.position.x = -fPos;
+          fLeft.castShadow = true;
+          group.add(fLeft);
+
+          const fRight = new THREE.Mesh(fGeom, materialFlange);
+          fRight.rotation.z = Math.PI / 2;
+          fRight.position.x = fPos;
+          fRight.castShadow = true;
+          group.add(fRight);
+
+          for (let i = 0; i < boltCount; i++) {
+            const angle = (i / boltCount) * Math.PI * 2;
+            const by = Math.sin(angle) * boltCircle;
+            const bz = Math.cos(angle) * boltCircle;
+
+            const boltGeo = new THREE.CylinderGeometry(boltSize, boltSize, flangeThickness * 1.1, GEO.smallRadial);
+            boltGeo.rotateZ(Math.PI / 2);
+
+            const bL = new THREE.Mesh(boltGeo, materialMetal);
+            bL.position.set(-fPos, by, bz);
+            group.add(bL);
+
+            const bR = new THREE.Mesh(boltGeo, materialMetal);
+            bR.position.set(fPos, by, bz);
+            group.add(bR);
+          }
+        } else {
+          // Angle (90°): inlet bottom (-Y), outlet +X
+          const c2f = bodyLength / 2;
+
+          const inPipeGeo = new THREE.CylinderGeometry(pipeRadius, pipeRadius, c2f, GEO.mainRadial);
+          inPipeGeo.translate(0, -c2f / 2, 0);
+          group.add(new THREE.Mesh(inPipeGeo, materialBody));
+
+          const outPipeGeo = new THREE.CylinderGeometry(pipeRadius, pipeRadius, c2f, GEO.mainRadial);
+          outPipeGeo.rotateZ(-Math.PI / 2);
+          outPipeGeo.translate(c2f / 2, 0, 0);
+          group.add(new THREE.Mesh(outPipeGeo, materialBody));
+
+          const fGeomRaw = new THREE.CylinderGeometry(flangeRadius, flangeRadius, flangeThickness, GEO.mainRadial);
+
+          const fBottomPos = -c2f + flangeThickness / 2;
+          const fB = new THREE.Mesh(fGeomRaw, materialFlange);
+          fB.position.set(0, fBottomPos, 0);
+          group.add(fB);
+
+          const fSidePos = c2f - flangeThickness / 2;
+          const fS = new THREE.Mesh(fGeomRaw, materialFlange);
+          fS.rotation.z = -Math.PI / 2;
+          fS.position.set(fSidePos, 0, 0);
+          group.add(fS);
+
+          for (let i = 0; i < boltCount; i++) {
+            const angle = (i / boltCount) * Math.PI * 2;
+            const bx = Math.sin(angle) * boltCircle;
+            const bz = Math.cos(angle) * boltCircle;
+            const boltGeo = new THREE.CylinderGeometry(boltSize, boltSize, flangeThickness * 1.1, GEO.smallRadial);
+            const b = new THREE.Mesh(boltGeo, materialMetal);
+            b.position.set(bx, fBottomPos, bz);
+            group.add(b);
+          }
+
+          for (let i = 0; i < boltCount; i++) {
+            const angle = (i / boltCount) * Math.PI * 2;
+            const by = Math.sin(angle) * boltCircle;
+            const bz = Math.cos(angle) * boltCircle;
+            const boltGeo = new THREE.CylinderGeometry(boltSize, boltSize, flangeThickness * 1.1, GEO.smallRadial);
+            boltGeo.rotateZ(Math.PI / 2);
+            const b = new THREE.Mesh(boltGeo, materialMetal);
+            b.position.set(fSidePos, by, bz);
+            group.add(b);
+          }
+        }
+
+        // Bonnet / yoke / stem / operator (as standalone)
+        const neckRadius = npsMm * 0.6;
+        const neckHeight = npsMm * 0.5;
+        const neckY = globeRadius * 0.6;
+
+        const neckGeo = new THREE.CylinderGeometry(neckRadius * 1.1, neckRadius, neckHeight, 32);
+        neckGeo.translate(0, neckY + neckHeight / 2, 0);
+        group.add(new THREE.Mesh(neckGeo, materialBody));
+
+        const bFlangeRadius = neckRadius * 1.5;
+        const bFlangeThick = Math.max(15, npsMm * 0.15);
+        const bFlangeY = neckY + neckHeight;
+
+        const bfGeo = new THREE.CylinderGeometry(bFlangeRadius, bFlangeRadius, bFlangeThick, 32);
+        bfGeo.translate(0, bFlangeY + bFlangeThick / 2, 0);
+        group.add(new THREE.Mesh(bfGeo, materialFlange));
+
+        const bonnetH = npsMm * 0.8;
+        const bonnetBodyY = bFlangeY + bFlangeThick;
+        const bonnetBodyGeo = new THREE.CylinderGeometry(neckRadius * 0.7, neckRadius * 0.8, bonnetH, 32);
+        bonnetBodyGeo.translate(0, bonnetBodyY + bonnetH / 2, 0);
+        group.add(new THREE.Mesh(bonnetBodyGeo, materialBonnet));
+
+        const bbCount = Math.max(4, Math.floor(boltCount * 0.6));
+        const bbCircle = bFlangeRadius * 0.8;
+        const bbSize = boltSize;
+
+        for (let i = 0; i < bbCount; i++) {
+          const angle = (i / bbCount) * Math.PI * 2;
+          const bx = Math.sin(angle) * bbCircle;
+          const bz = Math.cos(angle) * bbCircle;
+
+          const bGeo = new THREE.CylinderGeometry(bbSize, bbSize, bFlangeThick * 2, 12);
+          const bMesh = new THREE.Mesh(bGeo, materialMetal);
+          bMesh.position.set(bx, bFlangeY + bFlangeThick / 2, bz);
+          group.add(bMesh);
+
+          const nutGeo = new THREE.CylinderGeometry(bbSize * 1.6, bbSize * 1.6, bbSize, 6);
+          const nutMesh = new THREE.Mesh(nutGeo, materialMetal);
+          nutMesh.position.set(bx, bFlangeY + bFlangeThick + bbSize, bz);
+          group.add(nutMesh);
+        }
+
+        const yokeStart = bonnetBodyY + bonnetH;
+
+        const glandH = npsMm * 0.2;
+        const glandGeo = new THREE.CylinderGeometry(neckRadius * 0.5, neckRadius * 0.5, glandH, 24);
+        glandGeo.translate(0, yokeStart + glandH / 2, 0);
+        group.add(new THREE.Mesh(glandGeo, materialFlange));
+
+        const yokeH = npsMm * 1.5;
+        const yokeW = bFlangeRadius * 0.8;
+        const armThick = Math.max(10, npsMm * 0.15);
+
+        const armGeo = new THREE.BoxGeometry(armThick, yokeH, armThick * 1.5);
+        const armL = new THREE.Mesh(armGeo, materialBonnet);
+        armL.position.set(-yokeW / 2, yokeStart + glandH + yokeH / 2, 0);
+        group.add(armL);
+
+        const armR = new THREE.Mesh(armGeo, materialBonnet);
+        armR.position.set(yokeW / 2, yokeStart + glandH + yokeH / 2, 0);
+        group.add(armR);
+
+        const yokeTopY = yokeStart + glandH + yokeH;
+        const yokeTopGeo = new THREE.CylinderGeometry(neckRadius * 0.6, neckRadius * 0.6, armThick * 2, 24);
+        yokeTopGeo.translate(0, yokeTopY + armThick, 0);
+        group.add(new THREE.Mesh(yokeTopGeo, materialBonnet));
+
+        const stemR = Math.max(6, npsMm * 0.12);
+        const stemH = yokeH * 1.8;
+        const stemGeo = new THREE.CylinderGeometry(stemR, stemR, stemH, 16);
+        stemGeo.translate(0, yokeStart + stemH / 2, 0);
+        group.add(new THREE.Mesh(stemGeo, materialMetal));
+
+        const opY = yokeTopY + armThick * 2;
+
+        if (operatorType === 'handwheel') {
+          const wR = Math.max(80, npsMm * 1.5);
+          const wT = Math.max(12, npsMm * 0.12);
+
+          const hubGeo = new THREE.CylinderGeometry(stemR * 2, stemR * 1.8, wT, 24);
+          hubGeo.translate(0, opY + wT / 2, 0);
+          group.add(new THREE.Mesh(hubGeo, materialMetal));
+
+          const rimGeo = new THREE.TorusGeometry(wR, wT * 0.6, 10, 48);
+          rimGeo.rotateX(Math.PI / 2);
+          rimGeo.translate(0, opY + wT / 2, 0);
+          group.add(new THREE.Mesh(rimGeo, materialHandwheel));
+
+          const lockNut = new THREE.CylinderGeometry(stemR * 1.5, stemR * 1.5, stemR, 6);
+          lockNut.translate(0, opY + wT + stemR / 2, 0);
+          group.add(new THREE.Mesh(lockNut, materialMetal));
+        } else {
+          const actW = npsMm * 2.0;
+          const actH = npsMm * 2.2;
+          const baseH = 20;
+
+          const bGeo = new THREE.CylinderGeometry(yokeW * 0.3, yokeW * 0.3, baseH, 24);
+          bGeo.translate(0, opY + baseH / 2, 0);
+          group.add(new THREE.Mesh(bGeo, materialMetal));
+
+          const boxGeo = new THREE.BoxGeometry(actW, actH, actW * 0.7);
+          boxGeo.translate(0, opY + baseH + actH / 2, 0);
+          group.add(new THREE.Mesh(boxGeo, materialActuator));
+
+          const sideWRadius = actW * 0.25;
+          const sideWGeo = new THREE.CylinderGeometry(sideWRadius, sideWRadius, 10, 16);
+          sideWGeo.rotateZ(Math.PI / 2);
+          sideWGeo.translate(actW / 2 + 5, opY + baseH + actH / 3, 0);
+          group.add(new THREE.Mesh(sideWGeo, materialHandwheel));
+        }
+
+        scene.add(group);
+        currentValveGroup = group;
+        frameObjectToView(group, { padding: 1.3 });
+      }
+
+      function updateSelection() {
+        const size = parseFloat(selectEl.value);
+        const specs = valveData.find(v => v.size === size);
+        const operator = getOperatorType();
+        const config = getConfigType();
+
+        if (!specs) return;
+
+        const cost = Math.round(specs.cost * operatorCostMultiplier[operator]);
+
+        specSizeEl.textContent = `${specs.size}"`;
+        specOdEl.textContent = `${specs.od} mm`;
+        specWidthEl.textContent = `${specs.width} mm`;
+        specWeightEl.textContent = `${specs.weight} kg`;
+        specConfigEl.textContent = config === 'straight' ? 'Straight' : 'Angle (90°)';
+        specCostEl.textContent = `$${cost.toLocaleString()}`;
+
+        createGlobeValve(specs, operator, config);
+      }
+
+      selectEl.addEventListener('change', updateSelection);
+      operatorRadios.forEach(r => r.addEventListener('change', updateSelection));
+      configRadios.forEach(r => r.addEventListener('change', updateSelection));
+
+      // Init
+      selectEl.value = "6";
+      updateSelection();
+
+      // --- DXF Export (polyface) ---
+      function exportDXFPolyface(object) {
+        const layerName = "GLOBE_VALVE";
+        const nominalNps = String(document.getElementById('gl-size-select')?.value ?? '').trim();
+        const blockName = `GLOBE_VALVE_NPS${nominalNps}`;
+
+        const verts = [];
+        const faces = [];
+        const vmap = new Map();
+
+        const v = new THREE.Vector3();
+        const keyOf = (x, y, z) => `${x.toFixed(4)},${y.toFixed(4)},${z.toFixed(4)}`;
+
+        object.traverse((child) => {
+          if (!child.isMesh) return;
+          const geom = child.geometry;
+          const pos = geom.attributes.position;
+          if (!pos) return;
+
+          const idx = geom.index;
+          const mw = child.matrixWorld;
+
+          const addVertex = (vx, vy, vz) => {
+            const k = keyOf(vx, vy, vz);
+            const existing = vmap.get(k);
+            if (existing !== undefined) return existing;
+            const id = verts.length + 1;
+            vmap.set(k, id);
+            verts.push({ x: vx, y: vy, z: vz });
+            return id;
+          };
+
+          const addTriByIndices = (a, b, c) => {
+            v.fromBufferAttribute(pos, a).applyMatrix4(mw);
+            const ia = addVertex(v.x, v.y, v.z);
+            v.fromBufferAttribute(pos, b).applyMatrix4(mw);
+            const ib = addVertex(v.x, v.y, v.z);
+            v.fromBufferAttribute(pos, c).applyMatrix4(mw);
+            const ic = addVertex(v.x, v.y, v.z);
+            faces.push([ia, ib, ic]);
+          };
+
+          if (idx) {
+            for (let i = 0; i < idx.count; i += 3) {
+              addTriByIndices(idx.getX(i), idx.getX(i + 1), idx.getX(i + 2));
+            }
+          } else {
+            for (let i = 0; i < pos.count; i += 3) {
+              addTriByIndices(i, i + 1, i + 2);
+            }
+          }
+        });
+
+        let dxf = "0\nSECTION\n2\nHEADER\n9\n$ACADVER\n1\nAC1009\n0\nENDSEC\n";
+
+        dxf += "0\nSECTION\n2\nTABLES\n";
+        dxf += "0\nTABLE\n2\nLAYER\n70\n1\n";
+        dxf += `0\nLAYER\n2\n${layerName}\n70\n0\n62\n7\n6\nCONTINUOUS\n`;
+        dxf += "0\nENDTAB\n0\nENDSEC\n";
+
+        dxf += "0\nSECTION\n2\nBLOCKS\n";
+        dxf += `0\nBLOCK\n8\n${layerName}\n2\n${blockName}\n70\n0\n10\n0.0\n20\n0.0\n30\n0.0\n3\n${blockName}\n1\n\n`;
+
+        dxf += `0\nPOLYLINE\n8\n${layerName}\n66\n1\n70\n64\n10\n0\n20\n0\n30\n0\n`;
+
+        for (const p of verts) {
+          dxf += `0\nVERTEX\n8\n${layerName}\n10\n${p.x}\n20\n${p.y}\n30\n${p.z}\n70\n192\n`;
+        }
+
+        for (const f of faces) {
+          dxf += `0\nVERTEX\n8\n${layerName}\n10\n0\n20\n0\n30\n0\n70\n128\n71\n${f[0]}\n72\n${f[1]}\n73\n${f[2]}\n74\n${f[2]}\n`;
+        }
+
+        dxf += `0\nSEQEND\n8\n${layerName}\n`;
+        dxf += "0\nENDBLK\n0\nENDSEC\n";
+
+        dxf += "0\nSECTION\n2\nENTITIES\n";
+        dxf += `0\nINSERT\n8\n${layerName}\n2\n${blockName}\n10\n0.0\n20\n0.0\n30\n0.0\n`;
+        dxf += "0\nENDSEC\n0\nEOF";
+
+        return dxf;
+      }
+
+      // --- Download Logic ---
+      document.getElementById('gl-download-btn').addEventListener('click', () => {
+        const exporter = new STLExporter();
+        const result = exporter.parse(currentValveGroup, { binary: true });
+
+        const size = selectEl.value;
+        const operator = getOperatorType();
+        const config = getConfigType();
+
+        const blob = new Blob([result], { type: 'application/octet-stream' });
+        const link = document.createElement('a');
+        link.style.display = 'none';
+        document.body.appendChild(link);
+        link.href = URL.createObjectURL(blob);
+        link.download = `GlobeValve_${size}inch_${config}_${operator}_ASTM.stl`;
+        link.click();
+        document.body.removeChild(link);
+      });
+
+      document.getElementById('gl-download-dxf-btn').addEventListener('click', () => {
+        currentValveGroup.updateMatrixWorld(true);
+        const dxfContent = exportDXFPolyface(currentValveGroup);
+
+        const size = selectEl.value;
+        const operator = getOperatorType();
+        const config = getConfigType();
+
+        const blob = new Blob([dxfContent], { type: 'application/dxf' });
+        const link = document.createElement('a');
+        link.style.display = 'none';
+        document.body.appendChild(link);
+        link.href = URL.createObjectURL(blob);
+        link.download = `GlobeValve_${size}inch_${config}_${operator}_ASTM_POLYFACE.dxf`;
+        link.click();
+        document.body.removeChild(link);
+      });
+
+      return {
+        refresh: () => {
+          updateSelection();
+        }
+      };
+    })();
+
+
+// ============================================================
+    // TABS (show panel + refresh geometry)
+    // ============================================================
+    const tabButterfly = document.getElementById('tab-butterfly');
+    const tabCheck = document.getElementById('tab-check');
+    const tabGate = document.getElementById('tab-gate');
+    const tabGlobe = document.getElementById('tab-globe');
+
+    const panelButterfly = document.getElementById('panel-butterfly');
+    const panelCheck = document.getElementById('panel-check');
+    const panelGate = document.getElementById('panel-gate');
+    const panelGlobe = document.getElementById('panel-globe');
+
+    let active = 'butterfly';
+
+    function styleTab(tab, isActive) {
+      if (!tab) return;
+      if (isActive) {
+        tab.classList.add('bg-blue-600', 'text-white');
+        tab.classList.remove('bg-white', 'text-gray-700', 'border-gray-200');
+      } else {
+        tab.classList.add('bg-white', 'text-gray-700', 'border-gray-200');
+        tab.classList.remove('bg-blue-600', 'text-white');
+      }
+    }
+
+    function showPanel(panel, show) {
+      if (!panel) return;
+      if (show) panel.classList.remove('hidden');
+      else panel.classList.add('hidden');
+    }
+
+    function setTab(which) {
+      active = which;
+
+      showPanel(panelButterfly, which === 'butterfly');
+      showPanel(panelCheck, which === 'check');
+      showPanel(panelGate, which === 'gate');
+      showPanel(panelGlobe, which === 'globe');
+
+      styleTab(tabButterfly, which === 'butterfly');
+      styleTab(tabCheck, which === 'check');
+      styleTab(tabGate, which === 'gate');
+      styleTab(tabGlobe, which === 'globe');
+
+      if (which === 'butterfly') ButterflyApp.refresh();
+      else if (which === 'check') CheckApp.refresh();
+      else if (which === 'gate') GateApp.refresh();
+      else if (which === 'globe') GlobeApp.refresh();
+    }
+
+    tabButterfly?.addEventListener('click', () => setTab('butterfly'));
+    tabCheck?.addEventListener('click', () => setTab('check'));
+    tabGate?.addEventListener('click', () => setTab('gate'));
+    tabGlobe?.addEventListener('click', () => setTab('globe'));
+
+    // ============================================================
+    // INIT
+    // ============================================================
+    ButterflyApp.init();
+    CheckApp.init();
+    GateApp.init();
+    setTab('butterfly');
+
+    // Animation loop
+    function animate() {
+      requestAnimationFrame(animate);
+      controls.update();
+      renderer.render(scene, camera);
+    }
+    animate();
+
+    // Resize
+    window.addEventListener('resize', () => {
+      camera.aspect = window.innerWidth / window.innerHeight;
+      camera.updateProjectionMatrix();
+      renderer.setSize(window.innerWidth, window.innerHeight);
+
+      // Keep check-valve framing stable after resize; butterfly uses its own camera sizing
+      if (currentValveGroup && (active === 'check' || active === 'gate')) frameObjectToView(currentValveGroup, { padding: 1.3 });
+    });
+  </script>
+</body>
+</html>
