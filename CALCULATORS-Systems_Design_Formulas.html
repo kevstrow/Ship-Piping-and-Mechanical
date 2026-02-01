@@ -1,0 +1,412 @@
+<!DOCTYPE html>
+
+<html lang="en">
+<head>
+<meta charset="utf-8"/>
+<title>Ship Marine Systems Design Formulas</title>
+<style>
+  body { 
+    font-family: Calibri, sans-serif; 
+    padding: 2em; 
+    background-color: #fff; 
+    color: #000; 
+    font-size: 14px;
+  }
+
+  ul {
+    padding-left: 1em;
+    font-size: 0.9em;
+  }
+
+  .equation { 
+    display: block; 
+    font-style: italic; 
+    margin: 0.5em 0 0.5em 2em; 
+    font-size: 1.1em; 
+  }
+
+  .formula {
+    background: #cce7f0;
+    border: 1px solid #ccc;
+    border-radius: 12px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+    width: 400px;
+    padding: 1em;
+    box-sizing: border-box;
+    margin-bottom: 2em;
+    font-size: 14px;
+  }
+
+  h1 {
+    color: #003366; 
+    font-size: 30px; 
+    margin: 0.5em 0;
+  }
+
+  h2 {
+    color: #003366; 
+    font-size: 25px; 
+    margin: 1em 0;
+  }
+    
+  h3 {
+    color: #003366; 
+    font-size: 14px; 
+    margin: 0.5em 0;
+  }
+
+.section-card {
+  background-color: #e6f2f8;
+  border-radius: 15px;
+  padding: 1.5em;
+  margin-bottom: 2em;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+}
+.section-card.tanks     { background-color: #e6f2f8; }
+.section-card.range     { background-color: #fef6e4; }
+.section-card.systems   { background-color: #f3e5f5; }
+.section-card.energy    { background-color: #eaf4e2; }
+.section-card.conversion{ background-color: #f0e6ff; }
+.section-card.fluids    { background-color: #e0f7fa; }
+.section-card.electrical{ background-color: #fff4e6; }
+.section-card .formulas {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1em;
+}
+.formula {
+  width: calc(50% - 1em);
+}
+</style>
+</head>
+<body>
+  
+  
+<h1>Ship Marine Systems Design Formulas</h1>
+<p>This page provides a comprehensive collection of formulas used in the design and analysis of shipboard marine systems. It includes equations for fluid flow, power calculations, volume, electrical systems, and unit conversions. Having all these key relationships in one place helps students quickly reference, compare, and apply essential engineering concepts when solving practical design problems or studying for exams.</p>
+  
+  
+  
+<!-------------------------------------------------------------------------------------- HTML ------->
+<div class="section-card tanks"><h2>Ship Tank Capacity Formulas</h2>
+<p>NOTE:   Whenever calculating capacities, the applicable rules and regulations MUST be used.  The formulas listed in the course notes may be superseded by the applicable rules and regulations.</p>
+<div class="formulas"><div class="formula">
+<h3>Dirty Oil Tank Capacity</h3>
+<p class="equation">Dirty Oil Capacity = Lube Oil Storage Capacity × 1.05</p>
+<ul>
+<li>Lube Oil Storage Capacity = total volume of stored clean oil</li>
+<li>1.05 = structural allowance (5%)</li>
+</ul>
+</div>
+<div class="formula">
+<h3>Oily Bilge Tank Capacity (General Rule)</h3>
+<p class="equation">Oily Bilge Capacity ≈ Dirty Oil Capacity × 1.5</p>
+<ul>
+<li>Oily Bilge Capacity = volume of oily bilge tank</li>
+<li>Dirty Oil Capacity = volume of dirty oil tank</li>
+<li>1.5 = general guideline for sizing (general rule of thumb is that the tank should be 50% larger than the Dirty Oil tank)</li>
+</ul>
+<p>Note: Ships equipped with oily water separators may use smaller oily bilge tanks, as the separator treats and disposes of oily water onboard.</p>
+</div>
+<div class="formula">
+<h3>Dirty Oil Generation from Fuel Contamination</h3>
+<p class="equation">Dirty Oil per Day = (Fuel Tank Volume / 2000)</p>
+<ul>
+<li>Fuel Tank Volume = total volume of fuel in gallons</li>
+<li>1 gallon of dirty oil is generated per 2000 gallons of fuel</li>
+</ul>
+<p>This estimation is based on field data from ship marine engineers.</p>
+</div>
+<div class="formula">
+<h3>Day Tank Capacity</h3>
+<p class="equation">Capacity = Total Fuel Consumption × 8</p>
+<ul>
+<li>Capacity = volume of day tank (liters or m³)</li>
+<li>Total Fuel Consumption = rate of fuel use per hour</li>
+</ul>
+</div>
+<div class="formula">
+<h3>Minimum Fuel Capacity</h3>
+<p class="equation">Min Capacity = Fuel Rate × Mission Duration × 1.3 × 1.05</p>
+<ul>
+<li>Fuel Rate = total fuel consumption per hour</li>
+<li>Mission Duration = total expected time (hours)</li>
+<li>1.3 = fuel reserve safety factor</li>
+<li>1.05 = structural allowance (5%)</li>
+</ul>
+</div>
+<div class="formula">
+<h3>Fuel Overflow Tank Capacity</h3>
+<p class="equation">Overflow Capacity = Transfer Pump Rate × 10 minutes</p>
+<ul>
+<li>Overflow Capacity = required overflow tank volume (liters or m³)</li>
+<li>Transfer Pump Rate = flow rate of pump (liters or m³ per minute)</li>
+</ul>
+</div>
+<div class="formula">
+<h3>Conversion from Newtons per Square Meter to PSI</h3>
+<p class="equation">1 Pa = 0.000145038 PSI</p>
+<p class="equation">PSI = Pa × 0.000145038</p>
+<ul>
+<li>Pa = pressure in pascals (N/m²)</li>
+<li>PSI = pressure in pounds per square inch</li>
+</ul>
+</div>
+<div class="formula">
+<h3>Potable Water Tank Capacity</h3>
+<p class="equation">Min Capacity = Number of Crew  x  Amount of Water Usage per Person  x 1.05</p>
+<ul>
+<li>Amount of Water Usage per Person = 68 liters/day</li>
+<li>1.05 = structural allowance (5%)</li>
+</ul>
+</div>
+<div class="formula">
+<h3>Black and Grey Water Tank Capacity</h3>
+<p class="equation">Black Water tank capacity = Potable Water capacity  x  55%</p>
+<p class="equation">Grey Water tank capacity = Potable Water capacity  x  45%</p>
+</div>
+<div class="formula">
+<h3>Chain Locker Capacity </h3>
+<p class="equation">Volume of Chain Locker = 0.75 x (L x D²) </p>
+<ul>
+<li>L = Length of chain in fathoms (1 fathom = 6 feet  |  1 shot = 90 feet)</li>
+<li>D = Diameter of chain in inches</li>
+</ul>
+</div></div></div>
+  
+  
+<!-------------------------------------------------------------------------------------- HTML ------->
+<div class="section-card range"><h2>Ship Range Calculations</h2>
+
+<div class="formulas"><div class="formula">
+<h3>Distance from Speed and Time</h3>
+<p class="equation">v = d / t</p>
+<p class="equation">d = v × t</p>
+<ul>
+<li>v = speed (knots)</li>
+<li>d = distance (nautical miles)</li>
+<li>t = time (hours)</li>
+</ul>
+</div><div class="formula">
+<h3>Conversion to Kilometers</h3>
+<p class="equation">1 nautical mile = 1.852 kilometers</p>
+<p class="equation">distance<sub>km</sub> = distance<sub>nm</sub> × 1.852</p>
+<ul>
+<li>distance<sub>km</sub> = distance in kilometers</li>
+<li>distance<sub>nm</sub> = distance in nautical miles</li>
+</ul>
+  
+  
+</div></div></div>
+  
+  
+ 
+<!-------------------------------------------------------------------------------------- HTML -------> 
+  
+  <div class="section-card systems"><h2>Ship Systems Calculations</h2>
+<p>NOTE:   Whenever calculating system piping and component sizes, the applicable rules and regulations MUST be used.  The formulas listed in the course notes may be superseded by the applicable rules and regulations.</p>
+
+
+<div class="formulas"><div class="formula">
+<h3>Bilge Main Diameter</h3>
+<p class="equation">d = 1.68 x √(L x (B+D) + 25mm</p>
+<ul>
+<li>d = internal diameter of bilge main, in millimeters</li>
+<li>L = length between the ship’s perpendiculars, in meters</li>
+<li>B = extreme breadth, in meters</li>
+<li>D = moulded depth, in meters</li>
+</ul>
+</div><div class="formula">
+<h3>Flow Rate for Pipes</h3>
+<p class="equation">Q = A × v</p>
+<ul>
+<li>Q = flow rate (m³/s)</li>
+<li>A = cross-sectional area of pipe (m²)</li>
+<li>v = velocity of fluid (m/s)</li>
+</ul>
+</div><div class="formula">
+<h3>Flow Rate for Tank Loading</h3>
+<p class="equation">Q = (Tank Volume / Time) * (1/60)</p>
+<ul>
+<li>Q = flow rate (m³/s)</li>
+<li>Tank Volume = Individual tank capacity (m³) </li>
+<li>Time = Time to completely fill the tank (min) </li>
+<li>1/60 = Conversion rate m³/min to m³/s </li>
+<li> NOTE:  Flow rates near 2.1 m/s are typical. Do not exceed 4 m/s.</li>
+</ul>
+</div><div class="formula">
+<h3>Fluid Velocity (v)</h3>
+<p class="equation">v = Q / A</p>
+<ul>
+<li>v = fluid velocity (m/s)</li>
+<li>Q = flow rate (m³/s)</li>
+<li>A = pipe cross-sectional area (m²)</li>
+</ul>
+</div><div class="formula">
+<h3>Pipe Diameter (D) 1</h3>
+<p class="equation">D = √(4Q / πv)</p>
+<ul>
+<li>D = pipe inner diameter (m)</li>
+<li>Q = flow rate (m³/s)</li>
+<li>v = fluid velocity (m/s)</li>
+</ul>
+</div><div class="formula">
+<h3>Pipe Diameter (D) 2</h3>
+<p class="equation">D = ( [(Q x 4) / (Velocity x 3.14)]^0.5 ) x 1000 mm)</p>
+<ul>
+<li>Q = flow rate (m³/s)</li>
+<li>v = fluid velocity (m/s)</li>
+<li>1000 mm = Conversion from meters to millimeters. </li>
+</ul>
+</div><div class="formula">
+<h3>Pipe Cross Section Area (A)</h3>
+<p class="equation">A = (π x D²)</p>
+<ul>
+<li>D = pipe inner diameter (m)</li>
+</ul>
+</div><div class="formula">
+<h3>Pipe Slope</h3>
+<p class="equation">Slope = rise / run</p>
+<ul>
+<li>Slope = dimensionless ratio</li>
+<li>rise = vertical height change (m)</li>
+<li>run = horizontal distance (m)</li>
+</ul>
+</div><div class="formula">
+<h3>Continuity Equation (for varying diameters)</h3>
+<p class="equation">A₁ × v₁ = A₂ × v₂</p>
+<ul>
+<li>A₁ = area of section 1 (m²)</li>
+<li>v₁ = velocity at section 1 (m/s)</li>
+<li>A₂ = area of section 2 (m²)</li>
+<li>v₂ = velocity at section 2 (m/s)</li>
+</ul>
+</div><div class="formula">
+<h3>Manning's Equation (gravity-driven pipe flow)</h3>
+<p class="equation">v = (1/n) × R<sup>2/3</sup> × S<sup>1/2</sup></p>
+<ul>
+<li>v = velocity (m/s)</li>
+<li>n = Manning's roughness coefficient</li>
+<li>R = hydraulic radius = A / P (m)</li>
+<li>S = slope of the pipe (dimensionless)</li>
+</ul>
+</div><div class="formula">
+<h3>Friction Loss (Darcy-Weisbach)</h3>
+<p class="equation">h<sub>f</sub> = f × (L/D) × (v² / 2g)</p>
+<ul>
+<li>h<sub>f</sub> = head loss due to friction (m)</li>
+<li>f = friction factor (dimensionless)</li>
+<li>L = length of pipe (m)</li>
+<li>D = pipe diameter (m)</li>
+<li>v = velocity (m/s)</li>
+<li>g = gravitational acceleration (9.81 m/s²)</li>
+</ul>
+</div></div></div><div class="section-card energy"><h2>Energy and Power</h2>
+
+
+
+<!-------------------------------------------------------------------------------------- HTML ------->
+<div class="formulas"><div class="formula">
+<h3>Pump Efficiency</h3>
+<p class="equation">η = P<sub>out</sub> / P<sub>in</sub></p>
+<ul>
+<li>η = pump efficiency (decimal)</li>
+<li>P<sub>out</sub> = hydraulic power output (W)</li>
+<li>P<sub>in</sub> = input power to the pump (W)</li>
+</ul>
+</div><div class="formula">
+<h3>Brake Horsepower (BHP)</h3>
+<p class="equation">BHP = (ρ × g × Q × H) / (3960 × η)</p>
+<ul>
+<li>BHP = brake horsepower (HP)</li>
+<li>ρ = fluid density (kg/m³)</li>
+<li>g = gravitational acceleration (9.81 m/s²)</li>
+<li>Q = flow rate (GPM)</li>
+<li>H = head (m)</li>
+<li>η = pump efficiency (decimal)</li>
+<li>3960 = constant (for HP from GPM and ft head)</li>
+</ul>
+</div><div class="formula">
+<h3>Motor Horsepower (MHP)</h3>
+<p class="equation">MHP = BHP / motor efficiency</p>
+<ul>
+<li>MHP = motor horsepower (HP)</li>
+<li>BHP = brake horsepower (HP)</li>
+<li>motor efficiency = decimal (e.g., 0.9)</li>
+</ul>
+</div></div></div><div class="section-card conversion"><h2>Conversions</h2>
+
+
+<!-------------------------------------------------------------------------------------- HTML ------->
+<div class="formulas"><div class="formula">
+<h3>Flow Conversion: Cubic Meters per Second to GPM</h3>
+<p class="equation">1 m³/s = 15,850.3 US gallons per minute (GPM)</p>
+<p class="equation">GPM = m³/s × 15,850.3</p>
+</div><div class="formula">
+<h3>Horsepower to Kilowatts</h3>
+<p class="equation">1 HP = 0.7457 kW</p>
+<p class="equation">kW = HP × 0.7457</p>
+</div></div></div><div class="section-card fluids"><h2>Fluid Dynamics</h2>
+
+<div class="formulas"><div class="formula">
+<h3>Reynolds Number (Re)</h3>
+<p class="equation">Re = (ρ × v × D) / μ     or     Re = (v × D) / ν</p>
+<ul>
+<li>Re = Reynolds number (dimensionless)</li>
+<li>ρ = fluid density (kg/m³)</li>
+<li>v = velocity (m/s)</li>
+<li>D = pipe diameter (m)</li>
+<li>μ = dynamic viscosity (Pa·s)</li>
+<li>ν = kinematic viscosity (m²/s)</li>
+</ul>
+</div></div></div><div class="section-card"><h2>Volume Calculations</h2>
+
+<!-------------------------------------------------------------------------------------- HTML ------->
+<div class="formulas"><div class="formula">
+<h3>Volume of Cylinder</h3>
+<p class="equation">V = π × r² × h</p>
+<ul>
+<li>V = volume (m³)</li>
+<li>r = radius (m)</li>
+<li>h = height or length (m)</li>
+</ul>
+</div></div></div><div class="section-card electrical"><h2>Electrical Formulas</h2>
+
+
+
+
+<div class="formulas"><div class="formula">
+<h3>Ohm's Law</h3>
+<p class="equation">V = I × R</p>
+<ul>
+<li>V = voltage (volts)</li>
+<li>I = current (amperes)</li>
+<li>R = resistance (ohms)</li>
+</ul>
+</div><div class="formula">
+<h3>Electrical Power</h3>
+<p class="equation">P = V × I</p>
+<ul>
+<li>P = power (watts)</li>
+<li>V = voltage (volts)</li>
+<li>I = current (amperes)</li>
+</ul>
+</div><div class="formula">
+<h3>Three-Phase Power</h3>
+<p class="equation">P = √3 × V × I × pf</p>
+<ul>
+<li>P = power (watts)</li>
+<li>V = line voltage (volts)</li>
+<li>I = line current (amperes)</li>
+<li>pf = power factor (decimal)</li>
+</ul>
+</div><div class="formula">
+<h3>Current (Amperage)</h3>
+<p class="equation">I = P / V</p>
+<ul>
+<li>I = current (amperes)</li>
+<li>P = power (watts)</li>
+<li>V = voltage (volts)</li>
+</ul>
+</div></div></div></body>
+</html>
