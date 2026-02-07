@@ -198,10 +198,10 @@
 
     <div class="toolbar">
       <nav class="tabs" role="tablist">
-        <button class="tab-btn" role="tab" aria-selected="true" aria-controls="tab-equipment" id="btn-equipment">VFI & CAD Blocks</button>
-        <button class="tab-btn" role="tab" aria-selected="false" aria-controls="tab-piping" id="btn-piping">Piping</button>
-        <button class="tab-btn" role="tab" aria-selected="false" aria-controls="tab-outfitting" id="btn-outfitting">Outfitting</button>
-        <button class="tab-btn" role="tab" aria-selected="false" aria-controls="tab-structural" id="btn-structural">Structural</button>
+        <button class="tab-btn" role="tab" aria-selected="true" aria-controls="tab-equipment" id="btn-equipment">VFI CAD Blocks</button>
+        <button class="tab-btn" role="tab" aria-selected="false" aria-controls="tab-piping" id="btn-piping">Piping CAD Blocks</button>
+        <button class="tab-btn" role="tab" aria-selected="false" aria-controls="tab-outfitting" id="btn-outfitting">Outfitting CAD Blocks</button>
+        <button class="tab-btn" role="tab" aria-selected="false" aria-controls="tab-structural" id="btn-structural">Structural CAD Blocks</button>
         <button class="tab-btn" role="tab" aria-selected="false" aria-controls="tab-templates" id="btn-templates">Templates & Symbols</button>
         <button class="tab-btn" role="tab" aria-selected="false" aria-controls="tab-spreadsheets" id="btn-spreadsheets">Calculators & Design Tools</button>
         <button class="tab-btn" role="tab" aria-selected="false" aria-controls="tab-regulations" id="btn-regulations">Regulations & Standards</button>
@@ -210,15 +210,15 @@
 
     
     
-    <!-- VFI & CAD BLOCKS -->
+    <!-- VFI CAD BLOCKS -->
     <section class="panel" role="tabpanel" id="tab-equipment" data-active="true">
-      <h2>VFI & CAD Blocks</h2>
+      <h2>VFI CAD Blocks</h2>
       <p>Active machinery and packaged items that connect into piping systems.</p>
       <div class="grid">
         <!-- Toggling data-active="true" on a card now enables the button and turns the card white -->
         <div class="card" data-active="false"><p class="title">Ballast Systems</p><p class="desc">3D Soilds of Ballast water systems, treatment equipment, tanks, and pumping arrangements.</p><div class="actions"><a target="_blank" class="btn" href="PLACEHOLDER.html">Open</a></div></div>
         
-        <div class="card" data-active="true"><p class="title">CAD Block Links</p><p class="desc">External resources and links to CAD block libraries.</p><div class="actions"><a target="_blank" class="btn" href="VFI-CAD_BLOCKS_Links.html">Open</a></div></div>
+        <div class="card" data-active="true"><p class="title">CAD Block Links</p><p class="desc">External resources and links to VFI CAD blocks and libraries. Download from manufacturers, suppliers, and CAD communities.</p><div class="actions"><a target="_blank" class="btn" href="VFI-CAD_BLOCKS_Links.html">Open</a></div></div>
         
         <div class="card" data-active="false"><p class="title">Compressed Air</p><p class="desc">3D Soilds of Air compressors, receivers, dryers, and pneumatic components.</p><div class="actions"><a target="_blank" class="btn" href="PLACEHOLDER.html">Open</a></div></div>
         
@@ -259,18 +259,17 @@
     
     <!-- PIPING -->
     <section class="panel" role="tabpanel" id="tab-piping">
-      <h2>Piping</h2>
+      <h2>Piping CAD Blocks</h2>
       <p>Core piping components.</p>
       <div class="grid">
         <div class="card" data-active="false"><p class="title">Expansion & Flex</p><p class="desc">3D Solid Generator for expansion joints, bellows, and flex hoses.</p><div class="actions">
           <a target="_blank" class="btn" href="PLACEHOLDER.html">Open</a></div></div>
         
-        <div class="card" data-active="true"><p class="title">Fittings</p><p class="desc">3D Solid Generator for elbows, tees, and reducers.</p><div class="actions">
+        <div class="card" data-active="true"><p class="title">Fittings</p><p class="desc">3D Solid Generator for elbows, tees, and reducers. (ANSI Class 300, ASME B16.5)</p><div class="actions">
           <a target="_blank" class="btn" href="PIPING-Fittings_Butt_Welded.html">Butt Welded</a></div></div>
         
-        <div class="card" data-active="true"><p class="title">Flanges</p><p class="desc">3D Solid Generator for flange types organized by standard.</p><div class="actions">
-          <a target="_blank" class="btn" href="PIPING-Flanges_EN-1092-1_PN40_SlipOn.html">Slip-on (EN-1092)</a
-          ><a target="_blank" class="btn" href="PIPING-Flanges_ANIS_Class300_SlipOn.html">Slip-on (ANSI)</a></div>
+        <div class="card" data-active="true"><p class="title">Flanges </p><p class="desc">3D Solid Generator for flange types. (ANSI Class 300, ASME B16.5)</p><div class="actions">
+          <a target="_blank" class="btn" href="PIPING-Flanges_ANIS_Class300_SlipOn.html">Slip-on</a></div>
         </div>
         
         <div class="card" data-active="false"><p class="title">Instrumentation</p><p class="desc">3D Solid Generator for gauges, meters, transmitters, and sensors.</p><div class="actions">
@@ -279,20 +278,14 @@
         <div class="card" data-active="false"><p class="title">Penetrations</p><p class="desc">3D Solid Generator for dulkhead and deck penetrations, with standards guide.</p><div class="actions">
           <a target="_blank" class="btn" href="PLACEHOLDER.html">Open</a></div></div>
         
-        <div class="card" data-active="true"><p class="title">Property Tables</p><p class="desc">Properties for pipe, flanges, valves, and fluids.</p><div class="actions">
-           <a target="_blank" class="btn" href="PIPING-Properties_Fittings.html">Steel Pipe & Welded Fittings</a>
-          <a target="_blank" class="btn" href="PIPING-Properties_Fluids.html">Fluids</a>
-         
-          </div></div>
-        
-        <div class="card" data-active="false"><p class="title">Supports & Hangers</p><p class="desc">3D Solid Generator for common support hardware, guides, and anchors, with standards guide.</p><div class="actions">
+       <div class="card" data-active="false"><p class="title">Supports & Hangers</p><p class="desc">3D Solid Generator for common support hardware, guides, and anchors, with standards guide.</p><div class="actions">
           <a target="_blank" class="btn" href="PLACEHOLDER.html">Open</a></div></div>
         
-        <div class="card" data-active="true"><p class="title">Valves (ANSI)</p><p class="desc">Gate, globe, ball, butterfly, and check valves.
+        <div class="card" data-active="true"><p class="title">Valves</p><p class="desc">Gate, globe, ball, butterfly, and check valves. (ANSI Class 300, ASME B16.5)
 <br> <span style="color: red;"> <b> NOTE:</b> Creates 3D polyface blocks. Next upgrade will use 3Dsolids.</span></p><div class="actions">
           <a target="_blank" class="btn" href="PIPING-Combined_Valve_Generators.html">Open</a></div></div>
         
-        <div class="card" data-active="true"><p class="title">Y-Strainers</p><p class="desc">ANSI Y-Strainers.<br> <span style="color: red;"> <b> NOTE:</b> Creates 3D polyface blocks. Next upgrade will use 3Dsolids.</span></p><div class="actions">
+        <div class="card" data-active="true"><p class="title">Y-Strainers</p><p class="desc">Carbon Steel  (ANSI Class 300, ASME B16.5)<br> <span style="color: red;"> <b> NOTE:</b> Creates 3D polyface blocks. Next upgrade will use 3Dsolids.</span></p><div class="actions">
           <a target="_blank" class="btn" href="PIPING-Y_Strainers.html">Open</a></div></div>
       </div>
     </section>
@@ -301,7 +294,7 @@
     
     <!-- OUTFITTING -->
     <section class="panel" role="tabpanel" id="tab-outfitting">
-      <h2>Outfitting</h2>
+      <h2>Outfitting CAD Blocks</h2>
       <div class="grid">
         <div class="card" data-active="false"><p class="title">Access Covers</p><p class="desc">Hatches, scuttles, and inspection openings.</p><div class="actions">
           <a target="_blank" class="btn" href="PLACEHOLDER.html">Open</a></div></div>
@@ -339,7 +332,7 @@
     
     <!-- STRUCTURAL -->
     <section class="panel" role="tabpanel" id="tab-structural">
-      <h2>Structural</h2>
+      <h2>Structural CAD Blocks</h2>
       <div class="grid">
         <div class="card" data-active="true"><p class="title">Structural Steel</p><p class="desc">Standard profiles, custom profiles, and custom web-flange shipyard-built griders</p><div class="actions">
           <a target="_blank" class="btn" href="STRUCTURAL-Steel_Profiles_Generator.html" data-enabled="false">Open</a></div></div>
