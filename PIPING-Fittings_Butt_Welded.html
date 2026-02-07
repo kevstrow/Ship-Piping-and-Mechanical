@@ -1,15 +1,14 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Butt-Weld Fitting Generator (ASME B16.9)</title>
+
   <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
+
   <style>
-    body { margin: 0; overflow: hidden; background-color: #f3f4f6; }
-    #canvas-container { width: 100%; height: 100vh; display: block; }
-    .overlay { position: absolute; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; }
-    .panel { pointer-events: auto; }
+    body { margin: 0; background-color: #f3f4f6; }
     ::-webkit-scrollbar { width: 8px; height: 8px; }
     ::-webkit-scrollbar-track { background: #f1f1f1; }
     ::-webkit-scrollbar-thumb { background: #888; border-radius: 4px; }
@@ -21,6 +20,7 @@
       border-color: #60a5fa;     /* blue-400 */
     }
   </style>
+
   <script type="importmap">
     {
       "imports": {
@@ -32,14 +32,27 @@
 </head>
 
 <body class="text-gray-800 font-sans">
-  <div id="canvas-container"></div>
+  <div class="p-4 md:p-6">
+    <div class="bg-white/90 backdrop-blur shadow-lg rounded-xl p-6 w-full max-w-md flex flex-col gap-4 border border-gray-200 max-h-[92vh] overflow-y-auto">
 
-  <div class="overlay flex flex-col md:flex-row justify-between p-4 md:p-6 gap-4">
-
-    <div class="panel bg-white/90 backdrop-blur shadow-lg rounded-xl p-6 w-full md:w-96 flex flex-col gap-4 border border-gray-200 h-fit max-h-[90vh] overflow-y-auto">
       <h1 class="text-2xl font-bold text-slate-700">Fitting Generator</h1>
       <p class="text-sm text-gray-500">Butt-Weld (ASME B16.9) — STL + DXF Centerlines/Profiles</p>
 
+      
+          <!-- Simple insertable instruction box (below Download button) -->
+        <div style="margin-top:4px; padding:10px 14px; border:1px solid #e0d18a; border-radius:10px; background:#fff7cc; font-size:14px; line-height:1.4;">
+          <strong>How to create solid components</strong>
+          <ol style="margin:6px 0 0 18px;">
+            <li>Command:  <b> EXTRUDE </b> </li>
+            <li> - Select a circle that is the pipe NPS</li>
+            <li> - Press <code>Enter</code></li>
+            <li> - Choose: <code>PATH</code> → Select fitting CL</li>
+            <li>For reducers, use  <b> LOFT </b>  with the GUIDE option</li>
+          </ol>
+        </div>    
+      
+      
+      
       <!-- Fitting Type Grid -->
       <div>
         <label class="block text-sm font-medium text-gray-700 mb-2">Select Fitting Type</label>
@@ -80,7 +93,6 @@
             <div class="border border-gray-200 rounded-lg p-2 text-center hover:bg-gray-50 transition text-sm font-medium">Concentric Reducer</div>
           </label>
 
-          
           <label class="cursor-pointer">
             <input type="radio" name="fit-type" value="ecc-reducer" class="type-radio hidden">
             <div class="border border-gray-200 rounded-lg p-2 text-center hover:bg-gray-50 transition text-sm font-medium">Eccentric Reducer</div>
@@ -89,11 +101,22 @@
             <input type="radio" name="fit-type" value="cross" class="type-radio hidden">
             <div class="border border-gray-200 rounded-lg p-2 text-center hover:bg-gray-50 transition text-sm font-medium">Cross (4-Way)</div>
           </label>
-<label class="cursor-pointer">
+          <label class="cursor-pointer">
             <input type="radio" name="fit-type" value="union" class="type-radio hidden">
             <div class="border border-gray-200 rounded-lg p-2 text-center hover:bg-gray-50 transition text-sm font-medium">Union (STL only)</div>
           </label>
         </div>
+      </div>
+
+      <!-- 3D Viewer (moved into side panel) -->
+      <div>
+        <div class="flex items-center justify-between mb-2">
+          <label class="block text-sm font-medium text-gray-700">3D Viewer</label>
+          <p class="text-xs text-gray-500 text-right">
+            Left: Rotate • Right: Pan • Scroll: Zoom
+          </p>
+        </div>
+        <div id="viewer-container" class="w-full h-64 md:h-72 bg-gray-100 border border-gray-200 rounded-lg overflow-hidden"></div>
       </div>
 
       <!-- Size Selection -->
@@ -105,16 +128,16 @@
         <div id="reducing-container" class="hidden">
           <label class="block text-sm font-medium text-gray-700 mb-1">Reducing Size (NPS)</label>
           <select id="size-select-2" class="w-full border border-gray-300 rounded-md p-2 focus:ring-2 focus:ring-blue-500 outline-none bg-white"></select>
-        
-        <!-- Eccentric Reducer Options -->
-        <div id="ecc-container" class="hidden mt-2">
-          <label class="block text-sm font-medium text-gray-700 mb-1">Eccentric Orientation</label>
-          <select id="ecc-flat" class="w-full border border-gray-300 rounded-md p-2 focus:ring-2 focus:ring-blue-500 outline-none bg-yellow-50">
-            <option value="top" selected>Flat on Top</option>
-            <option value="bottom">Flat on Bottom</option>
-          </select>
+
+          <!-- Eccentric Reducer Options -->
+          <div id="ecc-container" class="hidden mt-2">
+            <label class="block text-sm font-medium text-gray-700 mb-1">Eccentric Orientation</label>
+            <select id="ecc-flat" class="w-full border border-gray-300 rounded-md p-2 focus:ring-2 focus:ring-blue-500 outline-none bg-yellow-50">
+              <option value="top" selected>Flat on Top</option>
+              <option value="bottom">Flat on Bottom</option>
+            </select>
+          </div>
         </div>
-</div>
       </div>
 
       <!-- Schedule / Thickness (STL only) -->
@@ -161,27 +184,10 @@
           Download DXF
         </button>
 
-        <!-- Simple insertable instruction box (below Download button) -->
-        <div style="margin-top:4px; padding:10px 14px; border:1px solid #e0d18a; border-radius:10px; background:#fff7cc; font-size:14px; line-height:1.4;">
-          <strong>How to create a solid component (LOFT)</strong>
-          <ol style="margin:6px 0 0 18px;">
-            <li>Select large circle</li>
-            <li>Select small circle</li>
-            <li>Press <code>Enter</code></li>
-            <li>Choose: <code>Guides</code> → Select arc</li>
-          </ol>
-        </div>
+
       </div>
-    </div>
 
-    <div class="panel bg-white/80 backdrop-blur shadow-md rounded-lg p-3 h-fit self-end hidden md:block">
-      <p class="text-xs text-gray-500">
-        <strong>Left Click:</strong> Rotate <br>
-        <strong>Right Click:</strong> Pan <br>
-        <strong>Scroll:</strong> Zoom
-      </p>
     </div>
-
   </div>
 
   <script type="module">
@@ -209,19 +215,27 @@
     function c2c180_mm(nps){ return 2.0 * c2e90_mm(nps); }
     function teeCtoE_mm(nps){ return 0.79 * OD_MM[nps]; }
 
-    // --- Scene Setup ---
-    const container = document.getElementById('canvas-container');
+    // --- Scene Setup (embedded viewer) ---
+    const container = document.getElementById('viewer-container');
     const scene = new THREE.Scene();
     scene.background = new THREE.Color(0xf3f4f6);
 
-    const camera = new THREE.PerspectiveCamera(45, window.innerWidth / window.innerHeight, 0.1, 50000);
+    const camera = new THREE.PerspectiveCamera(45, 1, 0.1, 50000);
     camera.position.set(200, 200, 300);
 
-    const renderer = new THREE.WebGLRenderer({ antialias: true });
-    renderer.setSize(window.innerWidth, window.innerHeight);
+    const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: false });
     renderer.shadowMap.enabled = true;
     renderer.shadowMap.type = THREE.PCFSoftShadowMap;
     container.appendChild(renderer.domElement);
+
+    function resizeRendererToContainer(){
+      const w = Math.max(1, container.clientWidth);
+      const h = Math.max(1, container.clientHeight);
+      renderer.setSize(w, h, false);
+      camera.aspect = w / h;
+      camera.updateProjectionMatrix();
+    }
+    resizeRendererToContainer();
 
     const controls = new OrbitControls(camera, renderer.domElement);
     controls.enableDamping = true;
@@ -479,7 +493,7 @@
         const od2 = OD_MM[size2] || od;
         dims.lbl1 = 'Large OD:'; dims.val1 = od.toFixed(1);
         dims.lbl2 = 'Small OD:'; dims.val2 = od2.toFixed(1);
-            } else if (type === 'ecc-reducer') {
+      } else if (type === 'ecc-reducer') {
         const od2 = OD_MM[size2] || od;
         const flat = (document.getElementById('ecc-flat')?.value || 'top');
         dims.lbl1 = 'Large OD:'; dims.val1 = od.toFixed(1);
@@ -489,7 +503,6 @@
         dims.lbl1 = 'Run OD:'; dims.val1 = od.toFixed(1);
         dims.lbl2 = 'Branch OD:'; dims.val2 = od2.toFixed(1);
       } else if (type === 'union') {
-
         dims.lbl1 = 'Length:'; dims.val1 = (od * 1.5).toFixed(1);
         dims.lbl2 = 'Nut Width:'; dims.val2 = (od * 1.6 * 2).toFixed(1);
       }
@@ -534,10 +547,8 @@
       // show eccentric options only for eccentric reducer
       document.getElementById('ecc-container').classList.toggle('hidden', type !== 'ecc-reducer');
 
-
       // keep size2 <= size1 where it makes sense
       if (needsReduce) {
-        // auto-clamp size2 list to <= size1
         const allowed = NPS_LIST.filter(v => v <= size1);
         const cur = size2;
         sizeSelect2.innerHTML = "";
@@ -569,12 +580,16 @@
       document.getElementById('download-dxf-btn').disabled = (type === 'union');
       document.getElementById('download-dxf-btn').classList.toggle('opacity-50', type === 'union');
       document.getElementById('download-dxf-btn').classList.toggle('cursor-not-allowed', type === 'union');
+
+      // ensure the embedded renderer matches container size (layout may shift)
+      resizeRendererToContainer();
     }
 
     radios.forEach(r => r.addEventListener('change', updateUI));
     sizeSelect.addEventListener('change', updateUI);
     sizeSelect2.addEventListener('change', updateUI);
     schSelect.addEventListener('change', updateUI);
+    document.getElementById('ecc-flat')?.addEventListener('change', updateUI);
 
     // Init
     sizeSelect.value = "10";
@@ -589,11 +604,9 @@
     }
     animate();
 
-    // --- Resize ---
+    // --- Resize (watch window; also reframe) ---
     window.addEventListener('resize', () => {
-      camera.aspect = window.innerWidth / window.innerHeight;
-      camera.updateProjectionMatrix();
-      renderer.setSize(window.innerWidth, window.innerHeight);
+      resizeRendererToContainer();
       if (currentMesh) frameObject(currentMesh);
     });
 
@@ -739,7 +752,6 @@
         const r2 = od2/2;
 
         // Centerline length (mm). Keep a sensible default and scale with size.
-        // 10\"→8\" will come out at 203 mm by default.
         const L = Math.max(203, Math.round(0.75 * od1));
 
         // Centerline guide (this is the SWEEP path)
@@ -753,7 +765,6 @@
         addCircleNormal(lines, layerProf, p0, r1, n); // large end at start
         addCircleNormal(lines, layerProf, p1, r2, n); // small end at end
       }
-
 
       else if (type === "ecc-reducer"){
         const od2 = OD_MM[nps2] || od1;
@@ -769,8 +780,6 @@
                               "11",String(p1.x),"21",String(p1.y),"31",String(p1.z));
 
         // Eccentricity e = (OD_large - OD_small)/2
-        // Flat on Top => shift small circle DOWN (negative Y) so top edges align.
-        // Flat on Bottom => shift small circle UP (positive Y) so bottom edges align.
         const e = (od1 - od2) / 2;
         const flat = (document.getElementById('ecc-flat')?.value || 'top');
         const dy = (flat === 'top') ? -e : +e;
@@ -799,7 +808,6 @@
         addCircleNormal(lines, layerProf, {x:0,y: h,z:0}, rBr, {x:0,y:1,z:0});
       }
 
-
       lines.push("0","ENDSEC","0","EOF");
       return dxfJoin(lines);
     }
@@ -826,6 +834,13 @@
       URL.revokeObjectURL(link.href);
     });
 
+    // If panel scroll / font loading changes layout after first paint, do one more resize shortly after load
+    window.addEventListener('load', () => {
+      setTimeout(() => {
+        resizeRendererToContainer();
+        if (currentMesh) frameObject(currentMesh);
+      }, 50);
+    });
   </script>
 </body>
 </html>
