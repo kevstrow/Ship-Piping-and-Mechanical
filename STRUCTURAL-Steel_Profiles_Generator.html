@@ -3,12 +3,34 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
   <title>Structural Steel Profile Generator</title>
+
   <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
+  
+  <script type="importmap">
+    {
+      "imports": {
+        "three": "https://unpkg.com/three@0.160.0/build/three.module.js",
+        "three/addons/": "https://unpkg.com/three@0.160.0/examples/jsm/"
+      }
+    }
+  </script>
+  
+<!--------------------------------------------------------------------------------------CSS ------->
   <style>
     body { margin: 0; overflow: hidden; background-color: #f3f4f6; }
-    #canvas-container { width: 100%; height: 100vh; display: block; }
-    .overlay { position: absolute; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; }
+    
+   #canvas-container {
+  touch-action: none;
+}
+	 #canvas-container canvas {
+  width: 100% !important;
+  height: 100% !important;
+  display: block;
+}
+    
+ .overlay { position: absolute; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; }
     .panel { pointer-events: auto; }
     ::-webkit-scrollbar { width: 8px; height: 8px; }
     ::-webkit-scrollbar-track { background: #f1f1f1; }
@@ -21,28 +43,43 @@
       border-color: #60a5fa;     /* blue-400 */
     }
   </style>
-  <script type="importmap">
-    {
-      "imports": {
-        "three": "https://unpkg.com/three@0.160.0/build/three.module.js",
-        "three/addons/": "https://unpkg.com/three@0.160.0/examples/jsm/"
-      }
-    }
-  </script>
+
 </head>
-
+<!-------------------------------------------------------------------------------------- HTML ------->  
+  
 <body class="text-gray-800 font-sans">
-  <div id="canvas-container"></div>
-
-  <div class="overlay flex flex-col md:flex-row justify-between p-4 md:p-6 gap-4">
-
-    <!-- LEFT PANEL (keep layout consistent with the fittings generator) -->
-    <div class="panel bg-white/90 backdrop-blur shadow-lg rounded-xl p-6 w-full md:w-96 flex flex-col gap-4 border border-gray-200 h-fit max-h-[90vh] overflow-y-auto">
+  
+<!------------------------------------------------------------------------------- LEFT PANEL  -->
+  
+  <div class="app">
+      <div class="panel bg-white/90 backdrop-blur shadow-lg rounded-xl p-6 w-full md flex flex-col gap-4 border border-gray-200 h-fit ">
+		<div>
+          
+          
+    <div class="panel bg-white/90 backdrop-blur shadow-lg rounded-xl p-6 w-full max-w-md flex flex-col gap-4 border border-gray-200 max-h-[92vh] overflow-y-auto">
       <h1 class="text-2xl font-bold text-slate-700">Structural Profile Generator</h1>
       <p class="text-sm text-gray-500">2D DXF closed polylines + 3D STL preview (extruded)</p>
 
-      <!-- Profile Type Grid -->
+
+  <!------------------------------------------------------------------------------------- 3D Viewer -->
       <div>
+        <div class="flex items-center justify-between mb-2">
+          <label class="block text-sm font-medium text-gray-700">3D Viewer</label>
+          <p class="text-xs text-gray-500 text-right"> Left: Rotate • Right: Pan • Scroll: Zoom</p>
+        </div>
+
+        <!------------------------------------------------------------------------ Viewer canvas container -->
+        <div
+          id="canvas-container"
+          class="w-full h-64 md:h-72 bg-gray-100 border border-gray-200 rounded-lg overflow-hidden">
+        </div>
+      </div>     
+      <div>
+      
+  
+      
+<!---------------------------------------------------------------------------- Profile Type Grid -->
+      
         <label class="block text-sm font-medium text-gray-700 mb-2">Select Profile Type</label>
         <div class="grid grid-cols-2 gap-2">
           <label class="cursor-pointer">
@@ -74,13 +111,13 @@
         </div>
       </div>
 
-      <!-- Size Selection -->
+<!------------------------------------------------------------------------------------- Size Selection -->
       <div>
         <label class="block text-sm font-medium text-gray-700 mb-1">Size</label>
         <select id="size-select" class="w-full border border-gray-300 rounded-md p-2 focus:ring-2 focus:ring-blue-500 outline-none bg-white mb-2"></select>
 
 
-<!-- Custom Dimensions (appears when Size = Custom...) -->
+<!------------------------------------------------------ Custom Dimensions (appears when Size = Custom...) -->
 <div id="custom-container" class="hidden mt-3 bg-blue-50/60 border border-blue-200 rounded-lg p-3">
   <div class="flex items-center justify-between mb-2">
     <span class="text-sm font-semibold text-slate-700">Custom Dimensions (mm)</span>
@@ -94,7 +131,7 @@
   </p>
 </div>
 
-        <!-- Secondary selection container (kept for layout compatibility; unused for profiles) -->
+<!---------------------------------------------------------------------- Secondary selection container -->
         <div id="reducing-container" class="hidden">
           <label class="block text-sm font-medium text-gray-700 mb-1">Secondary</label>
           <select id="size-select-2" class="w-full border border-gray-300 rounded-md p-2 focus:ring-2 focus:ring-blue-500 outline-none bg-white"></select>
@@ -110,7 +147,7 @@
       </div>
 
 
-      <!-- Dimensions Table -->
+<!---------------------------------------------------------------------------------- Dimensions Table -->
       <div class="bg-gray-50 rounded-lg p-3 border border-gray-200 text-sm">
         <h3 class="font-semibold text-gray-700 border-b border-gray-200 pb-2 mb-2">Section Properties (mm, kg/m)</h3>
         <div class="grid grid-cols-2 gap-y-2 gap-x-4">
@@ -128,7 +165,7 @@
         </div>
       </div>
 
-      <!-- Actions -->
+<!--------------------------------------------------------------------------Download Buttons -->
       <div class="pt-2 flex flex-col gap-2">
         <button id="download-btn" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 px-4 rounded-lg transition shadow-md flex justify-center items-center gap-2 cursor-pointer">
           <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -144,9 +181,9 @@
           Download DXF
         </button>
 
-        <!-- Instruction box (same placement as fittings generator) -->
+<!---------------------------------------------------------------------------------------- Instruction box -->
         <div style="margin-top:4px; padding:10px 14px; border:1px solid #e0d18a; border-radius:10px; background:#fff7cc; font-size:14px; line-height:1.4;">
-          <strong>How to create a 3D member in AutoCAD (EXTRUDE)</strong>
+     <strong>How to create a 3D member in AutoCAD (EXTRUDE)</strong>
           <ol style="margin:6px 0 0 18px;">
             <li>Open the DXF in AutoCAD.</li>
             <li>Select the profile polyline (it is already <em>closed</em>).</li>
@@ -157,17 +194,13 @@
       </div>
     </div>
 
-    <!-- RIGHT MINI PANEL (unchanged) -->
-    <div class="panel bg-white/80 backdrop-blur shadow-md rounded-lg p-3 h-fit self-end hidden md:block">
-      <p class="text-xs text-gray-500">
-        <strong>Left Click:</strong> Rotate <br>
-        <strong>Right Click:</strong> Pan <br>
-        <strong>Scroll:</strong> Zoom
-      </p>
-    </div>
+ 
+ 
 
-  </div>
-
+<!-------------------------------------------------------------------------------- JAVASCRIPT ------->  
+  
+  
+  
   <script type="module">
     import * as THREE from 'three';
     import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
@@ -569,6 +602,7 @@ if (type === "girder"){
     let currentOutline = null;
     let currentType = null;
     let currentSpec = null;
+    let customRenderedForType = null; // tracks when custom fields were last rendered
 
     function buildProfileMesh(outlinePts, lengthMm){
       // outlinePts in mm (XY). Extrude along +Z.
@@ -865,12 +899,19 @@ function updateUI(){
   const isCustom = (key === "__custom__");
   if (isCustom){
     customContainer.classList.remove('hidden');
-    // Seed custom fields from the first preset for this type (reasonable defaults)
-    const seedKey = (SECTION_DB[type] && SECTION_DB[type][0]) ? SECTION_DB[type][0].key : null;
-    const seed = seedKey ? getProfileSpec(type, seedKey) : null;
-    renderCustomFields(type, seed);
+
+    // Render custom inputs ONLY when we first enter Custom... for this profile type.
+    // Do NOT re-render on Apply, otherwise the inputs get rebuilt and user-entered values reset.
+    if (customRenderedForType !== type){
+      // Seed custom fields from the first preset for this type (reasonable defaults)
+      const seedKey = (SECTION_DB[type] && SECTION_DB[type][0]) ? SECTION_DB[type][0].key : null;
+      const seed = seedKey ? getProfileSpec(type, seedKey) : null;
+      renderCustomFields(type, seed);
+      customRenderedForType = type;
+    }
   } else {
     customContainer.classList.add('hidden');
+    customRenderedForType = null;
   }
 
   const dims = createProfile(type, key, L);
