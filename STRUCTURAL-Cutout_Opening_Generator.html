@@ -5,10 +5,29 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Opening Generator (Rounded Rectangle & Oval)</title>
   <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
+    <script type="importmap">
+    {
+      "imports": {
+        "three": "https://unpkg.com/three@0.160.0/build/three.module.js",
+        "three/addons/": "https://unpkg.com/three@0.160.0/examples/jsm/"
+      }
+    }
+  </script>
+  
+<!--------------------------------------------------------------------------------------CSS ------->
   <style>
     body { margin: 0; overflow: hidden; background-color: #f3f4f6; }
-    #canvas-container { width: 100%; height: 100vh; display: block; }
-    .overlay { position: absolute; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; }
+    
+   #canvas-container {
+  touch-action: none;
+}
+	 #canvas-container canvas {
+  width: 100% !important;
+  height: 100% !important;
+  display: block;
+}
+    
+ .overlay { position: absolute; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; }
     .panel { pointer-events: auto; }
     ::-webkit-scrollbar { width: 8px; height: 8px; }
     ::-webkit-scrollbar-track { background: #f1f1f1; }
@@ -22,25 +41,36 @@
     }
   </style>
 
-  <script type="importmap">
-    {
-      "imports": {
-        "three": "https://unpkg.com/three@0.160.0/build/three.module.js",
-        "three/addons/": "https://unpkg.com/three@0.160.0/examples/jsm/"
-      }
-    }
-  </script>
 </head>
-
+<!-------------------------------------------------------------------------------------- HTML ------->  
+  
 <body class="text-gray-800 font-sans">
-  <div id="canvas-container"></div>
-
-  <div class="overlay flex flex-col md:flex-row justify-between p-4 md:p-6 gap-4">
-    <!-- LEFT PANEL -->
+  
+<!------------------------------------------------------------------------------- LEFT PANEL  -->
+  
     <div class="panel bg-white/90 backdrop-blur shadow-lg rounded-xl p-6 w-full md:w-96 flex flex-col gap-4 border border-gray-200 h-fit max-h-[90vh] overflow-y-auto">
       <h1 class="text-2xl font-bold text-slate-700">Cutout Opening Generator</h1>
       <p class="text-sm text-gray-500">Rounded rectangle &amp; oval openings • 2D DXF closed polyline</p>
 
+      
+  <!------------------------------------------------------------------------------------- 3D Viewer -->
+      <div>
+        <div class="flex items-center justify-between mb-2">
+          <label class="block text-sm font-medium text-gray-700">3D Viewer</label>
+          <p class="text-xs text-gray-500 text-right"> Left: Rotate • Right: Pan • Scroll: Zoom</p>
+        </div>
+
+        <!------------------------------------------------------------------------ Viewer canvas container -->
+        <div
+          id="canvas-container"
+          class="w-full h-64 md:h-72 bg-gray-100 border border-gray-200 rounded-lg overflow-hidden">
+        </div>
+      </div>     
+      <div>
+           
+      
+      
+      
       <!-- Type Grid -->
       <div>
         <label class="block text-sm font-medium text-gray-700 mb-2">Select Opening Type</label>
@@ -124,15 +154,9 @@
       </div>
     </div>
 
-    <!-- RIGHT MINI PANEL -->
-    <div class="panel bg-white/80 backdrop-blur shadow-md rounded-lg p-3 h-fit self-end hidden md:block">
-      <p class="text-xs text-gray-500">
-        <strong>Left Click:</strong> Rotate <br>
-        <strong>Right Click:</strong> Pan <br>
-        <strong>Scroll:</strong> Zoom
-      </p>
-    </div>
-  </div>
+   
+
+<!-------------------------------------------------------------------------------- JAVASCRIPT ------->
 
   <script type="module">
     import * as THREE from 'three';
@@ -147,18 +171,18 @@
     const PRESETS = {
       rrect: [
   // ─── DOORS ─────────────────────────────────────────────
-  { key: "1800 × 600 (R50) — Internal passage door",          w: 1800, h: 600,  r: 50 },
-  { key: "1900 × 650 (R50) — Standard internal door",         w: 1900, h: 650,  r: 50 },
-  { key: "2000 × 700 (R75) — Accommodation WT door",          w: 2000, h: 700,  r: 75 },
-  { key: "2100 × 750 (R75) — Machinery space WT door",        w: 2100, h: 750,  r: 75 },
-  { key: "2200 × 800 (R100) — Large machinery access door",   w: 2200, h: 800,  r: 100 },
+{ key: "1800 × 600 (R50) — Internal passage door",          w: 600,  h: 1800, r: 50 },
+{ key: "1900 × 650 (R50) — Standard internal door",         w: 650,  h: 1900, r: 50 },
+{ key: "2000 × 700 (R75) — Accommodation WT door",          w: 700,  h: 2000, r: 75 },
+{ key: "2100 × 750 (R75) — Machinery space WT door",        w: 750,  h: 2100, r: 75 },
+{ key: "2200 × 800 (R100) — Large machinery access door",   w: 800,  h: 2200, r: 100 },
 
-  // ─── HATCHES ───────────────────────────────────────────
-  { key: "800 × 600 (R75) — Small stores hatch",              w: 800,  h: 600,  r: 75 },
-  { key: "1000 × 800 (R100) — Deck stores hatch",             w: 1000, h: 800,  r: 100 },
-  { key: "1200 × 900 (R125) — Machinery access hatch",        w: 1200, h: 900,  r: 125 },
-  { key: "1500 × 1200 (R150) — Large machinery removal hatch",w: 1500, h: 1200, r: 150 },
-  { key: "2000 × 1500 (R200) — Cargo / service hatch",        w: 2000, h: 1500, r: 200 },
+// ─── HATCHES ───────────────────────────────────────────
+{ key: "800 × 600 (R75) — Small stores hatch",              w: 600,  h: 800,  r: 75 },
+{ key: "1000 × 800 (R100) — Deck stores hatch",             w: 800,  h: 1000, r: 100 },
+{ key: "1200 × 900 (R125) — Machinery access hatch",        w: 900,  h: 1200, r: 125 },
+{ key: "1500 × 1200 (R150) — Large machinery removal hatch",w: 1200, h: 1500, r: 150 },
+{ key: "2000 × 1500 (R200) — Cargo / service hatch",        w: 1500, h: 2000, r: 200 },
 ],
 
      oval: [
